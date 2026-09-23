@@ -1,0 +1,38 @@
+export const CATEGORY_COLORS = {
+  'Elektronik': '#3B82F6',
+  'Makanan': '#F59E0B',
+  'Rumah Tangga': '#10B981',
+  'Pakaian': '#EC4899',
+  'Lainnya': '#8B5CF6'
+};
+
+export const MONTH_NAMES = [
+  { value: 1, label: 'Januari' },
+  { value: 2, label: 'Februari' },
+  { value: 3, label: 'Maret' },
+  { value: 4, label: 'April' },
+  { value: 5, label: 'Mei' },
+  { value: 6, label: 'Juni' },
+  { value: 7, label: 'Juli' },
+  { value: 8, label: 'Agustus' },
+  { value: 9, label: 'September' },
+  { value: 10, label: 'Oktober' },
+  { value: 11, label: 'November' },
+  { value: 12, label: 'Desember' }
+];
+
+export const PAYMENT_METHODS = [
+  'Tunai',
+  'QRIS',
+  'Transfer Bank',
+  'Kartu Debit',
+  'Kartu Kredit',
+  'E-Wallet',
+  'Paylater'
+];
+
+export const STORE_TYPES = [
+  { value: 'fisik', label: 'Toko Fisik' },
+  { value: 'online', label: 'Online' },
+  { value: 'marketplace', label: 'Marketplace' }
+];

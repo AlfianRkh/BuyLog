@@ -1,0 +1,94 @@
+.location-type-pills {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.loc-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--gray-200);
+  background-color: #FFFFFF;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--gray-600);
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.loc-pill:hover {
+  border-color: var(--primary-400);
+  color: var(--primary-600);
+}
+
+.loc-pill.active {
+  background-color: var(--primary-600);
+  border-color: var(--primary-600);
+  color: #FFFFFF;
+}
+
+.loc-pill.active .dot {
+  background-color: #FFFFFF !important;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.dot-orange { background-color: #F59E0B; }
+.dot-green { background-color: #10B981; }
+.dot-blue { background-color: #3B82F6; }
+
+.map-card-wrapper {
+  padding: 6px;
+}
+
+.location-rankings-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.location-rank-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  background-color: var(--gray-50);
+  border: 1px solid var(--gray-100);
+}
+
+.location-rank-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.loc-pin-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  background-color: var(--primary-50);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.location-name {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--gray-800);
+}
+
+.location-tx-badge {
+  font-size: 0.775rem;
+  color: var(--gray-600);
+  font-weight: 600;
+}

@@ -1,0 +1,146 @@
+.report-summary-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.report-metric-card {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 24px;
+}
+
+.report-metric-icon {
+  width: 60px;
+  height: 60px;
+  border-radius: var(--radius-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.report-metric-content {
+  display: flex;
+  flex-direction: column;
+}
+
+.report-metric-label {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--gray-500);
+}
+
+.report-metric-value {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: var(--gray-900);
+  line-height: 1.2;
+  margin: 4px 0;
+}
+
+.report-metric-trend {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.report-rankings-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.rankings-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ranking-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--gray-100);
+  background-color: var(--gray-50);
+}
+
+.ranking-number {
+  font-weight: 800;
+  font-size: 0.95rem;
+  color: var(--gray-400);
+  width: 20px;
+}
+
+.ranking-store-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-md);
+  background-color: #FFFFFF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-xs);
+}
+
+.ranking-thumb {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background-color: #FFFFFF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-xs);
+}
+
+.ranking-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.ranking-details {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.ranking-title {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--gray-800);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ranking-sub {
+  font-size: 0.75rem;
+  color: var(--gray-500);
+}
+
+.ranking-badge {
+  font-size: 0.775rem;
+  font-weight: 700;
+  color: var(--primary-700);
+  background-color: var(--primary-50);
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
+}
+
+@media (max-width: 900px) {
+  .report-summary-grid {
+    grid-template-columns: 1fr;
+  }
+  .report-rankings-grid {
+    grid-template-columns: 1fr;
+  }
+}
