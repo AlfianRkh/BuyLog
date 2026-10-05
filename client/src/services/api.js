@@ -69,5 +69,38 @@ export const api = {
       body: formData,
       isFormData: true
     });
+  },
+
+  // DebtTracker API Methods
+  debtTracker: {
+    getContacts: (search = '') => api.get('/debt-tracker/contacts', { search }),
+    createContact: (data) => api.post('/debt-tracker/contacts', data),
+    getContactWASummary: (id) => api.get(`/debt-tracker/contacts/${id}/summary-text`),
+    getDebtSummary: () => api.get('/debt-tracker/debts/summary'),
+    getDebts: (params = {}) => api.get('/debt-tracker/debts', params),
+    getDebtDetail: (id) => api.get(`/debt-tracker/debts/${id}`),
+    createDebt: (data) => api.post('/debt-tracker/debts', data),
+    recordPayment: (id, data) => api.post(`/debt-tracker/debts/${id}/payments`, data),
+    cancelDebt: (id, reason) => api.put(`/debt-tracker/debts/${id}/cancel`, { reason }),
+    deleteDebt: (id) => api.delete(`/debt-tracker/debts/${id}`),
+    getMonthlyReport: () => api.get('/debt-tracker/reports/monthly'),
+    getDebtMonthlyReport: () => api.get('/debt-tracker/reports/monthly'),
+    updateSettings: (data) => api.put('/debt-tracker/settings', data)
+  },
+
+  // PriceRadar API Methods
+  priceRadar: {
+    getDashboard: () => api.get('/priceradar/dashboard'),
+    getWatchlist: (params = {}) => api.get('/priceradar/watchlist', params),
+    createWatchlist: (data) => api.post('/priceradar/watchlist', data),
+    getProductDetail: (idOrSlug) => api.get(`/priceradar/watchlist/${idOrSlug}`),
+    updateWatchlist: (id, data) => api.put(`/priceradar/watchlist/${id}`, data),
+    deleteWatchlist: (id) => api.delete(`/priceradar/watchlist/${id}`),
+    recordLog: (data) => api.post('/priceradar/logs', data),
+    getSources: (params = {}) => api.get('/priceradar/sources', params),
+    createSource: (data) => api.post('/priceradar/sources', data),
+    getStats: (params = {}) => api.get('/priceradar/stats', params)
   }
 };
+
+export default api;

@@ -9,6 +9,8 @@ const categoryRoutes = require('./categories');
 const storeRoutes = require('./stores');
 const locationRoutes = require('./locations');
 const uploadRoutes = require('./upload');
+const debtTrackerRoutes = require('./debtTracker');
+const priceRadarRoutes = require('./priceRadar');
 
 const router = express.Router();
 
@@ -22,5 +24,7 @@ router.use('/categories', categoryRoutes);
 router.use('/stores', storeRoutes);
 router.use('/locations', locationRoutes);
 router.use('/upload', uploadRoutes);
+router.use('/debt-tracker', debtTrackerRoutes);
+router.use('/priceradar', priceRadarRoutes);
 
 module.exports = router;

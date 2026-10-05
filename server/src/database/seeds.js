@@ -1,13 +1,111 @@
 const bcrypt = require('bcryptjs');
 const db = require('../config/database');
 
+async function seedPriceRadar(userId) {
+  const countRes = await db.query('SELECT COUNT(*) as count FROM price_radar_watchlist WHERE user_id = $1', [userId]);
+  if (parseInt(countRes.rows[0].count) > 0) return;
+
+  const insertWatchlist = async (title, slug, brand, category, edition, image_url, current_price, target_price, store_name, deal_score, status, is_atl, min_price, max_price, notes) => {
+    const res = await db.query(`
+      INSERT INTO price_radar_watchlist (user_id, title, slug, brand, category, edition, image_url, current_price, target_price, store_name, deal_score, status, is_atl, min_price, max_price, notes)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+      RETURNING id
+    `, [userId, title, slug, brand, category, edition, image_url, current_price, target_price, store_name, deal_score, status, is_atl, min_price, max_price, notes]);
+    return res.rows[0].id;
+  };
+
+  const w1 = await insertWatchlist(
+    'Logitech G Pro X 2 Lightspeed Wireless',
+    'logitech-g-pro-x-2',
+    'Logitech',
+    'Elektronik',
+    'White & Black Edition',
+    'https://lh3.googleusercontent.com/aida-public/AB6AXuCXhF515NNFsn78IP3MarYdbMrAeGDReHdeRSnAxuyeP1vXsIUjPHgxFZpPOWADh93rPxOvewK69KWc0BaVoNLGnYwMZmowgwXO1JtDAu4N4CZo4s1-XPe3_r9437acEcjzP8w0Qpl_GWCDMeLacyqtpa_IduUHRmVF8kuvSABl3aMbQorwet6lkzHU3e0rV-ggsGzpg-_Y-HGaXcXIFBVG9yjihhblPVP_Xne6_aYeUQflRUQjqblR0w',
+    2890000, 3000000, 'Tokopedia Official', 9.6, 'hit', true, 2890000, 3499000, 'SN: LOG-GPX2-BLK'
+  );
+
+  const w2 = await insertWatchlist(
+    'Bimoli Minyak Goreng Pouch 2L (Isi 2)',
+    'bimoli-minyak-goreng-2l',
+    'Bimoli',
+    'Groceries',
+    '2 x 2000 ml Reffill',
+    'https://lh3.googleusercontent.com/aida-public/AB6AXuBrO-ZCTKVipEML4BkI5usUzOZjfB6jvWeKJA_aStbq1S_nOfZnC11xrewp_m_VBmd0RqNHnNVx3J-QeBazwixSLUhbRLZN7aUJdiWZ95a4Jk6QrPMKVoL9FAB3WTCQa0VVIzCwa9y2SaYZr12Zzo1Pms_u1uKuhj8mVt7DsAe-UIokU8Ss7fEtdxGcvkpC1q6cbhgi5Y-yQfZjJYFAc_frdMp7Oddr4JqeWMG4NybaIin4gq3WI4s_jA',
+    68500, 72000, 'Indomaret Klik', 8.8, 'hit', false, 68500, 79000, 'CAT: FMCG Groceries'
+  );
+
+  const w3 = await insertWatchlist(
+    'Sony WH-1000XM5 Wireless Noise Cancelling',
+    'sony-wh-1000xm5',
+    'Sony',
+    'Elektronik',
+    'Silver / Black',
+    'https://lh3.googleusercontent.com/aida-public/AB6AXuBQ4dRe2p7B2v-g_fz9CkX-amElEm5hrsUHlArwlVwmLOUGwKHDL2m4oGN-1XN4r4C24ffsXmu7jm75jvi942sqxaavQthFgqbsnIk3yslb2EZG_dQEHlZbxO-gRdvzhcxs8TXUHs9--lsPEl09S-PvvcKIY-g3qH-L_h4VvSyMAw7gegHVULQGfgClqQlXOlyQnHix6RdgopYzb2b1QvsclNZeqh7dhH2VlprYhN9LiWDE6dktEgwrQ',
+    4599000, 4600000, 'Shopee Mall', 9.2, 'hit', false, 4599000, 5299000, 'SN: SNY-XM5-SLV'
+  );
+
+  const w4 = await insertWatchlist(
+    'Samsung Galaxy S24 Ultra 512GB Titanium Gray',
+    'samsung-galaxy-s24-ultra',
+    'Samsung',
+    'Elektronik',
+    'Garansi Resmi SEIN',
+    'https://lh3.googleusercontent.com/aida-public/AB6AXuBuXX8_CNZ-VtaxvLZzqzw6xrqKez1xnNMnHp8vwWr5JAVr7h_2uxX4usYaYIxm9zcmeSiq_fiD8Anmu-1haVwwlOeGHSTHBN3iPUk1_ezw51XJymew-7VzcYrWwdBAO73RHA0lsd5J-Vm8SL58EyviAwmXBeYoyqtbMLeudfkoFcJIliLZl0LZRigJ1nMcRN9iG0VXB_xx5ddA8tONYEJjwmwxJvuKFs37aqDMZIE1ny9mRFIUp3e9kg',
+    18499000, 18000000, 'Blibli Official', 8.2, 'watching', false, 18499000, 21999000, 'Mendekati Support Zone'
+  );
+
+  const w5 = await insertWatchlist(
+    'Keychron Q1 Pro Wireless Custom Mechanical Keyboard',
+    'keychron-q1-pro',
+    'Keychron',
+    'Elektronik',
+    'Banana Switch / Carbon Black',
+    'https://lh3.googleusercontent.com/aida-public/AB6AXuAcsPOHTsik0tnqLTymv_f6loyjMP5-hfwxaLstWod0Fgf7l5dAkL63LrC0FlnOrr1AMR9YHKX9wUEdpMXATEEkpeGkQ_5-ErOcH4cSZv0Y8UdXyCQBd76CBYRjl-9JWULHkupSqvU7wAgnH9r93CIm_xekxDKjmnpm2cTW1QIoCqspyEZRjZUU2Jk_dAn9rOu5GRr4WY5nCvsdiqzTJYMs-8Y-GWsWNEWqthS-pMVIzW3EUf6Olk_EBg',
+    2850000, 2500000, 'Tokopedia', 6.4, 'watching', false, 2750000, 3100000, 'Fluktuasi Datar'
+  );
+
+  const w6 = await insertWatchlist(
+    'Nike Pegasus 41 Running',
+    'nike-pegasus-41',
+    'Nike',
+    'Fashion & Sepatu',
+    'Volt / Black Edition',
+    'https://lh3.googleusercontent.com/aida-public/AB6AXuCBup-9dmrSLRurGVJ1nL3bqtteY-YNiJJmRlSqXDJSc-A1XEXay0sgBR0jPx2_Co92OJ2NZ2sRzr5G-t73Ja81tyRoXSwoTWN_Yo08usDnoBeFusjo3vufdiTuGfJ9BaKmPfK4lzD7j7V5qF3D7Qd-AZc_qA-Hn2LbfTPY7mJLxSurPpfZtLn_dfqlqOZPwr9epNNUWKyF5d7YPtW0aQ1-SGmDKZ3va3dwau0vGqrUb81g6iUiHwxpMg',
+    1599000, 1500000, 'Shopee', 7.8, 'watching', false, 1599000, 1950000, 'Diskon 18%'
+  );
+
+  await db.query(`
+    INSERT INTO price_radar_logs (watchlist_id, user_id, platform_name, price, notes)
+    VALUES 
+      ($1, $2, 'Tokopedia Official', 2890000, 'Voucher diskon gajian 8% + cashback 100k GoPay Coins. Rekor termurah!'),
+      ($1, $2, 'Shopee Mall', 3050000, 'Flash sale promo midnight brand Logitech.'),
+      ($1, $2, 'Blibli Official', 3150000, 'Harga promo bundling mouse pad.')
+  `, [w1, userId]);
+
+  const insertSource = async (name, type, url, winRate, logsCount, status, isStale) => {
+    await db.query(`
+      INSERT INTO price_radar_sources (user_id, name, type, url, win_rate, price_logs_count, activity_status, is_stale)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+    `, [userId, name, type, url, winRate, logsCount, status, isStale]);
+  };
+
+  await insertSource('Tokopedia', 'MARKETPLACE', 'https://tokopedia.com', 42, 32, 'Sangat Aktif', false);
+  await insertSource('Shopee', 'MARKETPLACE', 'https://shopee.co.id', 33, 28, 'Aktif', false);
+  await insertSource('Blibli', 'E-COMMERCE', 'https://blibli.com', 18, 14, 'Moderat', false);
+  await insertSource('Klik Indomaret / Alfa', 'GROCERY & TOKO', 'https://klikindomaret.com', 7, 5, 'Berkala', false);
+  await insertSource('iBox / Digimap', 'OFFLINE & ONLINE', 'https://ibox.co.id', 5, 3, 'Stabil (SRP)', false);
+  await insertSource('Harco / Mangga Dua', 'TOKO FISIK', '#', 2, 2, 'Kadaluarsa', true);
+}
+
 async function runSeeds() {
   console.log('Running PostgreSQL database seeds...');
 
   // Check if default user exists
   const existingUserRes = await db.query('SELECT id FROM users WHERE email = $1', ['alfian@example.com']);
   if (existingUserRes.rows.length > 0) {
-    console.log('PostgreSQL database already seeded. Skipping.');
+    const existingUserId = existingUserRes.rows[0].id;
+    await seedPriceRadar(existingUserId);
+    console.log('PostgreSQL database user exists, PriceRadar seeded.');
     return;
   }
 
@@ -246,6 +344,154 @@ async function runSeeds() {
   // Previous purchase of Minyak Goreng at Tokopedia (Rp 34.000)
   const prevP3 = await insertPurchase('INV/20260815/012', storeTokopedia, -7.2575, 112.7521, 'QRIS', 'Beli minyak goreng online', 34000, '2026-08-15 15:00:00');
   await insertItem(prevP3, pMinyak, 1, 34000, 34000, null);
+
+  // ==========================================
+  // DebtTracker Seed Data
+  // ==========================================
+  const insertContact = async (name, phone, notes) => {
+    const res = await db.query(`
+      INSERT INTO contacts (user_id, name, phone, notes)
+      VALUES ($1, $2, $3, $4)
+      RETURNING id
+    `, [userId, name, phone, notes]);
+    return res.rows[0].id;
+  };
+
+  const c1 = await insertContact('Budi Santoso', '0812-4491-0922', 'Partner bisnis kedai kopi');
+  const c2 = await insertContact('Budi Pratama', '0812-8899-2341', 'Pemilik Kedai Kopi Sahabat (Tebet)');
+  const c3 = await insertContact('Rina Pratiwi', '0813-7720-9118', 'Rekan kerja divisi Marketing');
+  const c4 = await insertContact('Rina Marlina', '0813-7721-0092', 'Teman kantor Senopati');
+  const c5 = await insertContact('Dedi Kusuma', '0857-1122-3344', 'Partner proyek IT & servis laptop');
+  const c6 = await insertContact('Andi Saputra', '0811-2233-4455', 'Sahabat kuliah');
+
+  const insertDebt = async (contactId, type, amount, remaining, desc, debtDate, dueDate, payMethod, status, notes, settledAt) => {
+    const res = await db.query(`
+      INSERT INTO debts (user_id, contact_id, type, amount, remaining, description, debt_date, due_date, payment_method, status, notes, settled_at)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+      RETURNING id
+    `, [userId, contactId, type, amount, remaining, desc, debtDate, dueDate, payMethod, status, notes, settledAt || null]);
+    return res.rows[0].id;
+  };
+
+  const insertPayment = async (debtId, amount, remainingAfter, payDate, payMethod, notes) => {
+    await db.query(`
+      INSERT INTO debt_payments (debt_id, amount, remaining_after, payment_date, payment_method, notes)
+      VALUES ($1, $2, $3, $4, $5, $6)
+    `, [debtId, amount, remainingAfter, payDate, payMethod, notes]);
+  };
+
+  const d1 = await insertDebt(c1, 'piutang', 3000000, 1500000, 'Pinjaman modal usaha warung kopi (Tahap 1)', '2026-09-01', '2026-11-15', 'Transfer Bank', 'active', 'Digunakan untuk pembelian grinder espresso komersial');
+  await insertPayment(d1, 500000, 2500000, '2026-09-08', 'Transfer Bank', 'Cicilan pertama (DP)');
+  await insertPayment(d1, 500000, 2000000, '2026-09-15', 'QRIS Statis', 'Cicilan ke-2');
+  await insertPayment(d1, 500000, 1500000, '2026-09-28', 'BCA Mobile', 'Cicilan ke-3');
+
+  const d2 = await insertDebt(c2, 'piutang', 3000000, 1500000, 'Pinjaman modal usaha kedai kopi cabang Tebet', '2026-09-01', '2026-11-15', 'Transfer Bank', 'active', '#DBT-2026-0042');
+  await insertPayment(d2, 500000, 2500000, '2026-09-08', 'Transfer Bank', 'Cicilan pertama');
+  await insertPayment(d2, 500000, 2000000, '2026-09-15', 'QRIS', 'Cicilan ke-2');
+  await insertPayment(d2, 500000, 1500000, '2026-09-28', 'BCA Mobile', 'Cicilan ke-3');
+
+  const d3 = await insertDebt(c3, 'hutang', 150000, 150000, 'Talangan bayar makan malam bersama tim di Senopati', '2026-09-25', '2026-09-30', 'Transfer Bank', 'overdue', 'Overdue 3 hari');
+
+  const d4 = await insertDebt(c4, 'hutang', 1500000, 1500000, 'Pinjam dana talangan pembelian gadget tim', '2026-09-20', '2026-10-20', 'Transfer Bank', 'active', 'Jatuh tempo pertengahan bulan');
+
+  const d5 = await insertDebt(c5, 'piutang', 2000000, 2000000, 'Talangan servis laptop & sparepart proyek IT', '2026-09-10', '2026-09-26', 'E-Wallet', 'overdue', 'Sudah diingatkan 2 kali');
+
+  const d6 = await insertDebt(c6, 'piutang', 800000, 0, 'Pinjam pulsa dan dana darurat ganti ban motor', '2026-09-05', '2026-09-20', 'QRIS', 'settled', 'Lunas penuh', '2026-10-01 10:00:00');
+  await insertPayment(d6, 800000, 0, '2026-10-01', 'QRIS', 'Pelunasan penuh oleh Andi');
+
+  // Seed PriceRadar Data
+  const insertWatchlist = async (title, slug, brand, category, edition, image_url, current_price, target_price, store_name, deal_score, status, is_atl, min_price, max_price, notes) => {
+    const res = await db.query(`
+      INSERT INTO price_radar_watchlist (user_id, title, slug, brand, category, edition, image_url, current_price, target_price, store_name, deal_score, status, is_atl, min_price, max_price, notes)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+      RETURNING id
+    `, [userId, title, slug, brand, category, edition, image_url, current_price, target_price, store_name, deal_score, status, is_atl, min_price, max_price, notes]);
+    return res.rows[0].id;
+  };
+
+  const w1 = await insertWatchlist(
+    'Logitech G Pro X 2 Lightspeed Wireless',
+    'logitech-g-pro-x-2',
+    'Logitech',
+    'Elektronik',
+    'White & Black Edition',
+    'https://lh3.googleusercontent.com/aida-public/AB6AXuCXhF515NNFsn78IP3MarYdbMrAeGDReHdeRSnAxuyeP1vXsIUjPHgxFZpPOWADh93rPxOvewK69KWc0BaVoNLGnYwMZmowgwXO1JtDAu4N4CZo4s1-XPe3_r9437acEcjzP8w0Qpl_GWCDMeLacyqtpa_IduUHRmVF8kuvSABl3aMbQorwet6lkzHU3e0rV-ggsGzpg-_Y-HGaXcXIFBVG9yjihhblPVP_Xne6_aYeUQflRUQjqblR0w',
+    2890000, 3000000, 'Tokopedia Official', 9.6, 'hit', true, 2890000, 3499000, 'SN: LOG-GPX2-BLK'
+  );
+
+  const w2 = await insertWatchlist(
+    'Bimoli Minyak Goreng Pouch 2L (Isi 2)',
+    'bimoli-minyak-goreng-2l',
+    'Bimoli',
+    'Groceries',
+    '2 x 2000 ml Reffill',
+    'https://lh3.googleusercontent.com/aida-public/AB6AXuBrO-ZCTKVipEML4BkI5usUzOZjfB6jvWeKJA_aStbq1S_nOfZnC11xrewp_m_VBmd0RqNHnNVx3J-QeBazwixSLUhbRLZN7aUJdiWZ95a4Jk6QrPMKVoL9FAB3WTCQa0VVIzCwa9y2SaYZr12Zzo1Pms_u1uKuhj8mVt7DsAe-UIokU8Ss7fEtdxGcvkpC1q6cbhgi5Y-yQfZjJYFAc_frdMp7Oddr4JqeWMG4NybaIin4gq3WI4s_jA',
+    68500, 72000, 'Indomaret Klik', 8.8, 'hit', false, 68500, 79000, 'CAT: FMCG Groceries'
+  );
+
+  const w3 = await insertWatchlist(
+    'Sony WH-1000XM5 Wireless Noise Cancelling',
+    'sony-wh-1000xm5',
+    'Sony',
+    'Elektronik',
+    'Silver / Black',
+    'https://lh3.googleusercontent.com/aida-public/AB6AXuBQ4dRe2p7B2v-g_fz9CkX-amElEm5hrsUHlArwlVwmLOUGwKHDL2m4oGN-1XN4r4C24ffsXmu7jm75jvi942sqxaavQthFgqbsnIk3yslb2EZG_dQEHlZbxO-gRdvzhcxs8TXUHs9--lsPEl09S-PvvcKIY-g3qH-L_h4VvSyMAw7gegHVULQGfgClqQlXOlyQnHix6RdgopYzb2b1QvsclNZeqh7dhH2VlprYhN9LiWDE6dktEgwrQ',
+    4599000, 4600000, 'Shopee Mall', 9.2, 'hit', false, 4599000, 5299000, 'SN: SNY-XM5-SLV'
+  );
+
+  const w4 = await insertWatchlist(
+    'Samsung Galaxy S24 Ultra 512GB Titanium Gray',
+    'samsung-galaxy-s24-ultra',
+    'Samsung',
+    'Elektronik',
+    'Garansi Resmi SEIN',
+    'https://lh3.googleusercontent.com/aida-public/AB6AXuBuXX8_CNZ-VtaxvLZzqzw6xrqKez1xnNMnHp8vwWr5JAVr7h_2uxX4usYaYIxm9zcmeSiq_fiD8Anmu-1haVwwlOeGHSTHBN3iPUk1_ezw51XJymew-7VzcYrWwdBAO73RHA0lsd5J-Vm8SL58EyviAwmXBeYoyqtbMLeudfkoFcJIliLZl0LZRigJ1nMcRN9iG0VXB_xx5ddA8tONYEJjwmwxJvuKFs37aqDMZIE1ny9mRFIUp3e9kg',
+    18499000, 18000000, 'Blibli Official', 8.2, 'watching', false, 18499000, 21999000, 'Mendekati Support Zone'
+  );
+
+  const w5 = await insertWatchlist(
+    'Keychron Q1 Pro Wireless Custom Mechanical Keyboard',
+    'keychron-q1-pro',
+    'Keychron',
+    'Elektronik',
+    'Banana Switch / Carbon Black',
+    'https://lh3.googleusercontent.com/aida-public/AB6AXuAcsPOHTsik0tnqLTymv_f6loyjMP5-hfwxaLstWod0Fgf7l5dAkL63LrC0FlnOrr1AMR9YHKX9wUEdpMXATEEkpeGkQ_5-ErOcH4cSZv0Y8UdXyCQBd76CBYRjl-9JWULHkupSqvU7wAgnH9r93CIm_xekxDKjmnpm2cTW1QIoCqspyEZRjZUU2Jk_dAn9rOu5GRr4WY5nCvsdiqzTJYMs-8Y-GWsWNEWqthS-pMVIzW3EUf6Olk_EBg',
+    2850000, 2500000, 'Tokopedia', 6.4, 'watching', false, 2750000, 3100000, 'Fluktuasi Datar'
+  );
+
+  const w6 = await insertWatchlist(
+    'Nike Pegasus 41 Running',
+    'nike-pegasus-41',
+    'Nike',
+    'Fashion & Sepatu',
+    'Volt / Black Edition',
+    'https://lh3.googleusercontent.com/aida-public/AB6AXuCBup-9dmrSLRurGVJ1nL3bqtteY-YNiJJmRlSqXDJSc-A1XEXay0sgBR0jPx2_Co92OJ2NZ2sRzr5G-t73Ja81tyRoXSwoTWN_Yo08usDnoBeFusjo3vufdiTuGfJ9BaKmPfK4lzD7j7V5qF3D7Qd-AZc_qA-Hn2LbfTPY7mJLxSurPpfZtLn_dfqlqOZPwr9epNNUWKyF5d7YPtW0aQ1-SGmDKZ3va3dwau0vGqrUb81g6iUiHwxpMg',
+    1599000, 1500000, 'Shopee', 7.8, 'watching', false, 1599000, 1950000, 'Diskon 18%'
+  );
+
+  // Insert Logs for w1
+  await db.query(`
+    INSERT INTO price_radar_logs (watchlist_id, user_id, platform_name, price, notes)
+    VALUES 
+      ($1, $2, 'Tokopedia Official', 2890000, 'Voucher diskon gajian 8% + cashback 100k GoPay Coins. Rekor termurah!'),
+      ($1, $2, 'Shopee Mall', 3050000, 'Flash sale promo midnight brand Logitech.'),
+      ($1, $2, 'Blibli Official', 3150000, 'Harga promo bundling mouse pad.')
+  `, [w1, userId]);
+
+  // Insert Sources
+  const insertSource = async (name, type, url, winRate, logsCount, status, isStale) => {
+    await db.query(`
+      INSERT INTO price_radar_sources (user_id, name, type, url, win_rate, price_logs_count, activity_status, is_stale)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+    `, [userId, name, type, url, winRate, logsCount, status, isStale]);
+  };
+
+  await insertSource('Tokopedia', 'MARKETPLACE', 'https://tokopedia.com', 42, 32, 'Sangat Aktif', false);
+  await insertSource('Shopee', 'MARKETPLACE', 'https://shopee.co.id', 33, 28, 'Aktif', false);
+  await insertSource('Blibli', 'E-COMMERCE', 'https://blibli.com', 18, 14, 'Moderat', false);
+  await insertSource('Klik Indomaret / Alfa', 'GROCERY & TOKO', 'https://klikindomaret.com', 7, 5, 'Berkala', false);
+  await insertSource('iBox / Digimap', 'OFFLINE & ONLINE', 'https://ibox.co.id', 5, 3, 'Stabil (SRP)', false);
+  await insertSource('Harco / Mangga Dua', 'TOKO FISIK', '#', 2, 2, 'Kadaluarsa', true);
 
   console.log('PostgreSQL database seeds completed successfully.');
 }

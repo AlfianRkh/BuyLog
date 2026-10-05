@@ -5,14 +5,85 @@
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>BuyLog - Pencatatan & Pembandingan Pembelian</title>
-    <!-- Google Fonts: Plus Jakarta Sans / Inter -->
+    <!-- Google Fonts: Plus Jakarta Sans & JetBrains Mono & Material Symbols -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    <!-- Tailwind CSS CDN for WishBoard & Dynamic Palette -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "surface-container-low": "#131b2e",
+              "on-surface-variant": "#cbc3d7",
+              "on-tertiary-fixed": "#001f26",
+              "secondary-fixed-dim": "#4edea3",
+              "secondary-container": "#00a572",
+              "on-secondary": "#003824",
+              "primary-fixed": "#e9ddff",
+              "background": "#0b1326",
+              "outline-variant": "#494454",
+              "surface-tint": "#d0bcff",
+              "on-primary-fixed": "#23005c",
+              "surface-variant": "#2d3449",
+              "secondary": "#4edea3",
+              "on-secondary-container": "#00311f",
+              "on-secondary-fixed": "#002113",
+              "inverse-surface": "#dae2fd",
+              "tertiary-fixed": "#acedff",
+              "tertiary-fixed-dim": "#4cd7f6",
+              "on-tertiary-fixed-variant": "#004e5c",
+              "outline": "#958ea0",
+              "primary-container": "#a078ff",
+              "error": "#ffb4ab",
+              "surface-container-highest": "#2d3449",
+              "error-container": "#93000a",
+              "on-background": "#dae2fd",
+              "on-primary-fixed-variant": "#5516be",
+              "primary-fixed-dim": "#d0bcff",
+              "on-tertiary": "#003640",
+              "on-surface": "#dae2fd",
+              "surface": "#0b1326",
+              "tertiary-container": "#009eb9",
+              "surface-dim": "#0b1326",
+              "inverse-on-surface": "#283044",
+              "inverse-primary": "#6d3bd7",
+              "on-secondary-fixed-variant": "#005236",
+              "on-tertiary-container": "#002f38",
+              "on-error-container": "#ffdad6",
+              "surface-bright": "#31394d",
+              "secondary-fixed": "#6ffbbe",
+              "on-primary-container": "#340080",
+              "surface-container-lowest": "#060e20",
+              "surface-container": "#171f33",
+              "on-primary": "#3c0091",
+              "tertiary": "#4cd7f6",
+              "primary": "#d0bcff",
+              "on-error": "#690005",
+              "surface-container-high": "#222a3d"
+            },
+            borderRadius: {
+              DEFAULT: "0.25rem",
+              lg: "0.5rem",
+              xl: "0.75rem",
+              full: "9999px"
+            },
+            fontFamily: {
+              sans: ["Plus Jakarta Sans", "sans-serif"],
+              mono: ["JetBrains Mono", "monospace"]
+            }
+          }
+        }
+      };
+    </script>
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
   </head>
-  <body>
+  <body class="bg-background text-on-surface antialiased selection:bg-primary-container selection:text-on-primary-container">
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>

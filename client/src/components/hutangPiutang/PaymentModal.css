@@ -1,0 +1,54 @@
+.payment-summary-box {
+  padding: 14px 18px;
+  background-color: var(--primary-50);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--primary-100);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.payment-summary-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.payment-summary-label {
+  font-size: 0.75rem;
+  color: var(--gray-500);
+  font-weight: 500;
+}
+
+.payment-summary-value {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--primary-700);
+}
+
+.payment-summary-value.secondary {
+  color: var(--success-600);
+}
+
+.quick-pay-options {
+  display: flex;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.quick-pay-btn {
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  background-color: var(--gray-100);
+  border: 1px solid var(--gray-200);
+  font-size: 0.775rem;
+  font-weight: 600;
+  color: var(--gray-700);
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.quick-pay-btn:hover {
+  background-color: var(--success-50);
+  color: var(--success-600);
+  border-color: var(--success-500);
+}
