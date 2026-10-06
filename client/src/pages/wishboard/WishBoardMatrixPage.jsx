@@ -189,68 +189,76 @@ export default function WishBoardMatrixPage() {
             </tr>
           </thead>
           <tbody>
-            {filteredItems.map((item, idx) => (
-              <tr key={item.id}>
-                <td style={{ textAlign: 'center', fontWeight: 800, color: 'var(--primary-600)' }}>
-                  #{idx + 1}
-                </td>
-                <td>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <img src={item.img} alt={item.name} style={{ width: '40px', height: '40px', borderRadius: '8px', objectFit: 'cover', border: '1px solid var(--gray-200)', flexShrink: 0 }} />
-                    <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <span style={{ fontWeight: 700, color: 'var(--gray-900)' }}>{item.name}</span>
-                        {item.tag && (
-                          <span style={{ fontSize: '0.7rem', fontWeight: 700, backgroundColor: 'var(--primary-50)', color: 'var(--primary-700)', padding: '1px 6px', borderRadius: '4px' }}>{item.tag}</span>
-                        )}
-                      </div>
-                      <span style={{ fontSize: '0.75rem', color: 'var(--gray-500)' }}>{item.category} • {item.brand}</span>
-                    </div>
-                  </div>
-                </td>
-                <td style={{ textAlign: 'right', fontWeight: 700, color: 'var(--gray-900)' }}>
-                  {formatRupiah(item.price)}
-                </td>
-                <td style={{ textAlign: 'center', fontSize: '0.8rem', fontWeight: 600, color: 'var(--gray-600)' }}>
-                  U:{item.urgency} • W:{item.want}
-                </td>
-                <td>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', fontWeight: 700 }}>
-                      <span>{item.score}/100</span>
-                      <span className={item.score >= 80 ? 'wb-tag-urgent' : 'wb-tag-high'}>{item.scoreBadge}</span>
-                    </div>
-                    <div className="wb-progress-bar"><div className="wb-progress-fill" style={{ width: `${item.score}%` }}></div></div>
-                  </div>
-                </td>
-                <td>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                    <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--success-600)' }}>{item.decisionRatio}% Positif ({item.pros ? item.pros.length : 0} P / {item.cons ? item.cons.length : 0} C)</span>
-                    <div style={{ display: 'flex', height: '6px', width: '100%', borderRadius: '4px', overflow: 'hidden', backgroundColor: 'var(--gray-200)' }}>
-                      <div style={{ width: `${item.decisionRatio}%`, backgroundColor: 'var(--success-500)' }}></div>
-                      <div style={{ width: `${100 - item.decisionRatio}%`, backgroundColor: 'var(--danger-500)' }}></div>
-                    </div>
-                  </div>
-                </td>
-                <td>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', fontWeight: 600 }}>
-                      <span>{item.readiness}%</span>
-                      <span style={{ color: 'var(--gray-500)' }}>{formatRupiah(item.saved)}</span>
-                    </div>
-                    <div className="wb-progress-bar"><div className="wb-progress-fill" style={{ width: `${item.readiness}%`, backgroundColor: item.readiness >= 100 ? 'var(--success-500)' : 'var(--primary-600)' }}></div></div>
-                  </div>
-                </td>
-                <td style={{ fontSize: '0.8rem', color: 'var(--gray-600)' }}>
-                  {item.deadline}
-                </td>
-                <td style={{ textAlign: 'center' }}>
-                  <Link to="/wishboard/detail" className="wb-btn-secondary" style={{ padding: '6px 12px', fontSize: '0.8rem' }}>
-                    Detail
-                  </Link>
+            {filteredItems.length === 0 ? (
+              <tr>
+                <td colSpan={9} style={{ textAlign: 'center', padding: '40px', color: 'var(--gray-500)', fontSize: '0.9rem' }}>
+                  📊 Belum ada item wishlist terdaftar di matriks. Klik "+ Tambah Item" untuk menambahkan.
                 </td>
               </tr>
-            ))}
+            ) : (
+              filteredItems.map((item, idx) => (
+                <tr key={item.id}>
+                  <td style={{ textAlign: 'center', fontWeight: 800, color: 'var(--primary-600)' }}>
+                    #{idx + 1}
+                  </td>
+                  <td>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <img src={item.img} alt={item.name} style={{ width: '40px', height: '40px', borderRadius: '8px', objectFit: 'cover', border: '1px solid var(--gray-200)', flexShrink: 0 }} />
+                      <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span style={{ fontWeight: 700, color: 'var(--gray-900)' }}>{item.name}</span>
+                          {item.tag && (
+                            <span style={{ fontSize: '0.7rem', fontWeight: 700, backgroundColor: 'var(--primary-50)', color: 'var(--primary-700)', padding: '1px 6px', borderRadius: '4px' }}>{item.tag}</span>
+                          )}
+                        </div>
+                        <span style={{ fontSize: '0.75rem', color: 'var(--gray-500)' }}>{item.category} • {item.brand}</span>
+                      </div>
+                    </div>
+                  </td>
+                  <td style={{ textAlign: 'right', fontWeight: 700, color: 'var(--gray-900)' }}>
+                    {formatRupiah(item.price)}
+                  </td>
+                  <td style={{ textAlign: 'center', fontSize: '0.8rem', fontWeight: 600, color: 'var(--gray-600)' }}>
+                    U:{item.urgency} • W:{item.want}
+                  </td>
+                  <td>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', fontWeight: 700 }}>
+                        <span>{item.score}/100</span>
+                        <span className={item.score >= 80 ? 'wb-tag-urgent' : 'wb-tag-high'}>{item.scoreBadge}</span>
+                      </div>
+                      <div className="wb-progress-bar"><div className="wb-progress-fill" style={{ width: `${item.score}%` }}></div></div>
+                    </div>
+                  </td>
+                  <td>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--success-600)' }}>{item.decisionRatio}% Positif ({item.pros ? item.pros.length : 0} P / {item.cons ? item.cons.length : 0} C)</span>
+                      <div style={{ display: 'flex', height: '6px', width: '100%', borderRadius: '4px', overflow: 'hidden', backgroundColor: 'var(--gray-200)' }}>
+                        <div style={{ width: `${item.decisionRatio}%`, backgroundColor: 'var(--success-500)' }}></div>
+                        <div style={{ width: `${100 - item.decisionRatio}%`, backgroundColor: 'var(--danger-500)' }}></div>
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', fontWeight: 600 }}>
+                        <span>{item.readiness}%</span>
+                        <span style={{ color: 'var(--gray-500)' }}>{formatRupiah(item.saved)}</span>
+                      </div>
+                      <div className="wb-progress-bar"><div className="wb-progress-fill" style={{ width: `${item.readiness}%`, backgroundColor: item.readiness >= 100 ? 'var(--success-500)' : 'var(--primary-600)' }}></div></div>
+                    </div>
+                  </td>
+                  <td style={{ fontSize: '0.8rem', color: 'var(--gray-600)' }}>
+                    {item.deadline}
+                  </td>
+                  <td style={{ textAlign: 'center' }}>
+                    <Link to="/wishboard/detail" className="wb-btn-secondary" style={{ padding: '6px 12px', fontSize: '0.8rem' }}>
+                      Detail
+                    </Link>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>

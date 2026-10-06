@@ -1,0 +1,855 @@
+// In-memory / Backend Database Store for SmartFin Split-Bill & Accounts
+let splitBillData = {
+  id: 'sb-1',
+  title: 'Kopi Kenangan & Kitchen - Galaxy Mall',
+  merchant: 'Kopi Kenangan & Kitchen - Galaxy Mall',
+  invoiceNo: 'INV-KK-20261005-0421',
+  date: '05 Okt 2026, 20:15 WIB',
+  paymentMethod: 'QRIS BCA',
+  paidBy: 'Alfian S.',
+  subtotalMenu: 190000,
+  taxPb1: 19000,
+  service: 11000,
+  totalBill: 220000,
+  participants: [
+    { id: 'p1', name: 'Alfian (Saya)', isHost: true, isPaid: true, portion: 57895, desc: 'Nasgor Gila + Fries' },
+    { id: 'p2', name: 'Budi Pratama', isHost: false, isPaid: false, portion: 92632, desc: 'Double Wagyu + Fries' },
+    { id: 'p3', name: 'Sari Anggraini', isHost: false, isPaid: true, portion: 63684, desc: 'Carbonara + Fries' },
+    { id: 'p4', name: 'Dimas Raditya', isHost: false, isPaid: false, portion: 31263, desc: 'Kopi Mantan + Fries' }
+  ]
+};
+
+let accountsData = [
+  { id: 'acc1', name: 'BCA Utama', type: 'Bank', number: '5410-8891-2291', balance: 12800000, color: '#3b82f6', isDefault: true },
+  { id: 'acc2', name: 'GoPay Premium', type: 'E-Wallet', number: '0812-8899-2341', balance: 950000, color: '#06b6d4', isDefault: false },
+  { id: 'acc3', name: 'Kas Tunai Dompet', type: 'Cash', number: 'Dompet Saku', balance: 500000, color: '#10b981', isDefault: false },
+];
+
+let mutationsData = {
+  'acc1': [
+    { id: 'MUT-101', date: '06 Okt 2026 · 09:45 WIB', merchant: 'Indomaret Merr Surabaya', category: '🥫 Kebutuhan Dapur', amount: 88500, type: 'expense', method: 'QRIS BCA', invoice: 'INV/20261006/00892' },
+    { id: 'MUT-102', date: '05 Okt 2026 · 20:15 WIB', merchant: 'Kopi Kenangan & Kitchen', category: '🍽️ Makan & Minum', amount: 57895, type: 'expense', method: 'QRIS BCA', invoice: 'INV/20261005/0421' },
+    { id: 'MUT-103', date: '04 Okt 2026 · 14:10 WIB', merchant: 'Superindo Merr Rungkut', category: '🥫 Bahan Makanan Segar', amount: 185000, type: 'expense', method: 'Debit BCA', invoice: 'INV/20261004/00188' },
+    { id: 'MUT-104', date: '01 Okt 2026 · 08:00 WIB', merchant: 'PT Inovasi Digital Nusantara', category: '💼 Pemasukan Utama', amount: 7500000, type: 'income', method: 'Transfer Bank', invoice: 'PAYROLL-20261001' },
+  ],
+  'acc2': [
+    { id: 'MUT-201', date: '02 Okt 2026 · 18:30 WIB', merchant: 'Starbucks Coffee Galaxy Mall', category: '☕ Kafe & Hiburan', amount: 62000, type: 'expense', method: 'GoPay QRIS', invoice: 'SBX-99812-2026' },
+    { id: 'MUT-202', date: '29 Sep 2026 · 12:15 WIB', merchant: 'Top Up GoPay via BCA Utama', category: '🔄 Top Up', amount: 500000, type: 'income', method: 'Transfer', invoice: 'TOPUP-GOPAY-882' },
+  ],
+  'acc3': [
+    { id: 'MUT-301', date: '03 Okt 2026 · 11:20 WIB', merchant: 'Parkir Superindo & Tips', category: '🚗 Transport', amount: 15000, type: 'expense', method: 'Cash', invoice: 'CASH-001' },
+    { id: 'MUT-302', date: '01 Okt 2026 · 16:45 WIB', merchant: 'Tarik Tunai ATM BCA', category: '💵 Tarik Tunai', amount: 300000, type: 'income', method: 'Cash', invoice: 'ATM-BCA-992' },
+  ]
+};
+
+// GET /api/smartfin/split-bill
+exports.getSplitBill = async (req, res, next) => {
+  try {
+    res.json({
+      success: true,
+      data: splitBillData
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// PUT /api/smartfin/split-bill/members/:id/toggle-paid
+exports.toggleMemberPaid = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const member = splitBillData.participants.find(p => p.id === id);
+
+    if (!member) {
+      return res.status(404).json({ success: false, message: 'Peserta tidak ditemukan di server BE.' });
+    }
+
+    member.isPaid = !member.isPaid;
+
+    res.json({
+      success: true,
+      message: `Status pembayaran ${member.name} berhasil diperbarui di Backend (${member.isPaid ? 'LUNAS ✅' : 'MENUNGGU'}).`,
+      data: splitBillData
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// POST /api/smartfin/split-bill/members
+exports.addMember = async (req, res, next) => {
+  try {
+    const { name, desc, portion } = req.body;
+
+    if (!name) {
+      return res.status(400).json({ success: false, message: 'Nama peserta wajib diisi.' });
+    }
+
+    const newId = 'p' + (splitBillData.participants.length + 1) + '_' + Date.now().toString().slice(-4);
+    const newMember = {
+      id: newId,
+      name,
+      isHost: false,
+      isPaid: false,
+      portion: Number(portion) || 25000,
+      desc: desc || 'Pesanan Tambahan'
+    };
+
+    splitBillData.participants.push(newMember);
+
+    res.status(201).json({
+      success: true,
+      message: `Peserta ${name} berhasil ditambahkan ke Backend.`,
+      data: splitBillData
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// ---------------------------------------------------------
+// ACCOUNTS & WALLETS ENDPOINTS
+// ---------------------------------------------------------
+
+// GET /api/smartfin/accounts
+exports.getAccounts = async (req, res, next) => {
+  try {
+    const totalLiquidity = accountsData.reduce((sum, a) => sum + (parseFloat(a.balance) || 0), 0);
+    res.json({
+      success: true,
+      accounts: accountsData,
+      totalLiquidity
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// POST /api/smartfin/accounts
+exports.createAccount = async (req, res, next) => {
+  try {
+    const { name, type, number, balance, color } = req.body;
+
+    if (!name) {
+      return res.status(400).json({ success: false, message: 'Nama rekening/dompet wajib diisi.' });
+    }
+
+    const newAcc = {
+      id: 'acc_' + Date.now(),
+      name,
+      type: type || 'Bank',
+      number: number || 'Rekening Baru',
+      balance: Number(balance) || 0,
+      color: color || '#10b981',
+      isDefault: false
+    };
+
+    accountsData.push(newAcc);
+    const totalLiquidity = accountsData.reduce((sum, a) => sum + (parseFloat(a.balance) || 0), 0);
+
+    res.status(201).json({
+      success: true,
+      message: `Rekening "${name}" berhasil dibuat di Backend API server.`,
+      account: newAcc,
+      accounts: accountsData,
+      totalLiquidity
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// POST /api/smartfin/accounts/transfer
+exports.transferAccounts = async (req, res, next) => {
+  try {
+    const { fromId, toId, amount } = req.body;
+    const numericAmount = parseFloat(amount) || 0;
+
+    if (numericAmount <= 0) {
+      return res.status(400).json({ success: false, message: 'Nominal transfer harus lebih dari 0.' });
+    }
+
+    const fromAcc = accountsData.find(a => a.id === fromId || a.name === fromId);
+    const toAcc = accountsData.find(a => a.id === toId || a.name === toId);
+
+    if (!fromAcc || !toAcc) {
+      return res.status(404).json({ success: false, message: 'Rekening asal atau tujuan tidak ditemukan.' });
+    }
+
+    if (fromAcc.balance < numericAmount) {
+      return res.status(400).json({ success: false, message: 'Saldo rekening asal tidak mencukupi.' });
+    }
+
+    fromAcc.balance -= numericAmount;
+    toAcc.balance += numericAmount;
+
+    // Record mutation logs in BE
+    const dateFormatted = new Date().toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) + ' · ' +
+                          new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WIB';
+
+    if (!mutationsData[fromAcc.id]) mutationsData[fromAcc.id] = [];
+    if (!mutationsData[toAcc.id]) mutationsData[toAcc.id] = [];
+
+    mutationsData[fromAcc.id].unshift({
+      id: 'MUT-' + Date.now().toString().slice(-4),
+      date: dateFormatted,
+      merchant: `Transfer ke ${toAcc.name}`,
+      category: '🔄 Transfer Antar Rekening',
+      amount: numericAmount,
+      type: 'expense',
+      method: 'Transfer',
+      invoice: 'TRF-' + Date.now().toString().slice(-6)
+    });
+
+    mutationsData[toAcc.id].unshift({
+      id: 'MUT-' + Date.now().toString().slice(-4),
+      date: dateFormatted,
+      merchant: `Transfer dari ${fromAcc.name}`,
+      category: '🔄 Transfer Antar Rekening',
+      amount: numericAmount,
+      type: 'income',
+      method: 'Transfer',
+      invoice: 'TRF-' + Date.now().toString().slice(-6)
+    });
+
+    const totalLiquidity = accountsData.reduce((sum, a) => sum + (parseFloat(a.balance) || 0), 0);
+
+    res.json({
+      success: true,
+      message: `Transfer Rp ${numericAmount.toLocaleString('id-ID')} dari ${fromAcc.name} ke ${toAcc.name} berhasil dieksekusi di Backend API.`,
+      accounts: accountsData,
+      totalLiquidity
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// DELETE /api/smartfin/accounts/:id
+exports.deleteAccount = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const targetAcc = accountsData.find(a => a.id === id);
+
+    if (!targetAcc) {
+      return res.status(404).json({ success: false, message: 'Rekening tidak ditemukan.' });
+    }
+
+    accountsData = accountsData.filter(a => a.id !== id);
+    delete mutationsData[id];
+
+    const totalLiquidity = accountsData.reduce((sum, a) => sum + (parseFloat(a.balance) || 0), 0);
+
+    res.json({
+      success: true,
+      message: `Rekening "${targetAcc.name}" berhasil dihapus dari Backend server.`,
+      accounts: accountsData,
+      totalLiquidity
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// GET /api/smartfin/accounts/:id/mutations
+exports.getAccountMutations = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const account = accountsData.find(a => a.id === id || a.name.toLowerCase() === id.toLowerCase());
+
+    const mutations = mutationsData[id] || (account && mutationsData[account.id]) || [
+      { id: 'MUT-DEF-1', date: '06 Okt 2026 · 10:00 WIB', merchant: 'Transaksi Pembukaan Rekening', category: '💼 Saldo Awal', amount: account ? account.balance : 1000000, type: 'income', method: 'Deposit', invoice: 'INIT-001' }
+    ];
+
+    const totalExpense = mutations.filter(m => m.type === 'expense').reduce((sum, m) => sum + m.amount, 0);
+    const totalIncome = mutations.filter(m => m.type === 'income').reduce((sum, m) => sum + m.amount, 0);
+
+    res.json({
+      success: true,
+      account: account || { id, name: 'Rekening Kas', type: 'Bank', balance: 0 },
+      mutations,
+      summary: {
+        totalExpense,
+        totalIncome,
+        netChange: totalIncome - totalExpense
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// ---------------------------------------------------------
+// POS ANGGARAN & ENVELOPE BUDGETING ENDPOINTS
+// ---------------------------------------------------------
+
+let budgetsData = [
+  { id: 'env-1', name: '🥫 Kebutuhan Dapur & Bahan', limit: 2500000, spent: 1850000, icon: '🥫', category: 'Pokok' },
+  { id: 'env-2', name: '🍽️ Makan Luar & Resto', limit: 1200000, spent: 980000, icon: '🍽️', category: 'Pokok' },
+  { id: 'env-3', name: '⚡ Tagihan & Utilitas', limit: 800000, spent: 620000, icon: '⚡', category: 'Pokok' },
+  { id: 'env-4', name: '🚗 Bensin & Transport', limit: 600000, spent: 250000, icon: '🚗', category: 'Pokok' },
+  { id: 'env-5', name: '☕ Kafe & Hiburan', limit: 500000, spent: 150000, icon: '☕', category: 'Keinginan' },
+  { id: 'env-6', name: '🛡️ Dana Darurat & Investasi', limit: 900000, spent: 0, icon: '🛡️', category: 'Tabungan' }
+];
+
+const calculateBudgetMetrics = () => {
+  const totalPlafon = budgetsData.reduce((sum, b) => sum + (b.limit || 0), 0);
+  const totalSpent = budgetsData.reduce((sum, b) => sum + (b.spent || 0), 0);
+  const remainingQuota = totalPlafon - totalSpent;
+  const burnRatePct = totalPlafon > 0 ? Number(((totalSpent / totalPlafon) * 100).toFixed(1)) : 0;
+  
+  const currentDay = 6;
+  const totalDays = 31;
+  const idealPct = Number(((currentDay / totalDays) * 100).toFixed(1));
+  const paceDiff = Number((burnRatePct - idealPct).toFixed(1));
+  
+  let burnPaceStatus = 'Ideal';
+  if (paceDiff > 15) burnPaceStatus = 'Waspada Laju';
+  else if (paceDiff > 5) burnPaceStatus = 'Agak Cepat';
+
+  return {
+    totalPlafon,
+    totalSpent,
+    remainingQuota,
+    burnRatePct,
+    burnPaceStatus,
+    paceDiff,
+    currentDay,
+    totalDays,
+    idealPct
+  };
+};
+
+// GET /api/smartfin/budgets
+exports.getBudgets = async (req, res, next) => {
+  try {
+    const metrics = calculateBudgetMetrics();
+    res.json({
+      success: true,
+      budgets: budgetsData,
+      metrics
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// POST /api/smartfin/budgets
+exports.createBudget = async (req, res, next) => {
+  try {
+    const { name, limit, icon, category } = req.body;
+
+    if (!name) {
+      return res.status(400).json({ success: false, message: 'Nama pos anggaran wajib diisi.' });
+    }
+
+    const newEnvelope = {
+      id: 'env-' + Date.now(),
+      name: name.trim(),
+      limit: Number(limit) || 1000000,
+      spent: 0,
+      icon: icon || '📦',
+      category: category || 'Umum'
+    };
+
+    budgetsData.push(newEnvelope);
+    const metrics = calculateBudgetMetrics();
+
+    res.status(201).json({
+      success: true,
+      message: `Pos anggaran "${name}" berhasil ditambahkan ke Backend.`,
+      budgets: budgetsData,
+      metrics
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// POST /api/smartfin/budgets/apply-503020
+exports.applyRule503020 = async (req, res, next) => {
+  try {
+    const salary = Number(req.body.salary) || 8500000;
+    const needsLimit = Math.round(salary * 0.5);
+    const wantsLimit = Math.round(salary * 0.3);
+    const savingsLimit = Math.round(salary * 0.2);
+
+    budgetsData = [
+      { id: 'env-503020-1', name: '🥫 Kebutuhan Pokok & Bahan Dapur (50%)', limit: needsLimit, spent: 1850000, icon: '🥫', category: 'Pokok' },
+      { id: 'env-503020-2', name: '☕ Keinginan & Gaya Hidup (30%)', limit: wantsLimit, spent: 980000, icon: '☕', category: 'Keinginan' },
+      { id: 'env-503020-3', name: '🛡️ Tabungan & Investasi (20%)', limit: savingsLimit, spent: 0, icon: '🛡️', category: 'Tabungan' }
+    ];
+
+    const metrics = calculateBudgetMetrics();
+
+    res.json({
+      success: true,
+      message: `Pola alokasi 50/30/20 dengan basis gaji Rp ${salary.toLocaleString('id-ID')} berhasil diterapkan di Backend.`,
+      budgets: budgetsData,
+      metrics,
+      ruleSummary: {
+        salary,
+        needsLimit,
+        wantsLimit,
+        savingsLimit
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// DELETE /api/smartfin/budgets/:id
+exports.deleteBudget = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const target = budgetsData.find(b => b.id === id);
+
+    if (!target) {
+      return res.status(404).json({ success: false, message: 'Pos anggaran tidak ditemukan.' });
+    }
+
+    budgetsData = budgetsData.filter(b => b.id !== id);
+    const metrics = calculateBudgetMetrics();
+
+    res.json({
+      success: true,
+      message: `Pos anggaran "${target.name}" berhasil dihapus dari Backend.`,
+      budgets: budgetsData,
+      metrics
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// ---------------------------------------------------------
+// TRANSACTIONS, DASHBOARD, REPORTS & SETTINGS STORE & ENDPOINTS
+// ---------------------------------------------------------
+
+
+let transactionsData = [
+  { id: 'TX-1001', date: '06 Okt 2026', time: '09:45 WIB', merchant: 'Indomaret Merr Surabaya', itemsCount: 4, amount: 88500, type: 'expense', account: 'BCA Utama', category: '🥫 Kebutuhan Dapur', status: 'Verified OCR', receiptNo: 'INV/20261006/00892', confidence: 99.4 },
+  { id: 'TX-1002', date: '05 Okt 2026', time: '20:15 WIB', merchant: 'Kopi Kenangan & Kitchen', itemsCount: 3, amount: 57895, type: 'expense', account: 'BCA Utama', category: '🍽️ Makan & Minum', status: 'Verified OCR', receiptNo: 'INV/20261005/0421', confidence: 98.7 },
+  { id: 'TX-1003', date: '04 Okt 2026', time: '14:10 WIB', merchant: 'Superindo Merr Rungkut', itemsCount: 7, amount: 185000, type: 'expense', account: 'BCA Utama', category: '🥫 Kebutuhan Dapur', status: 'Verified OCR', receiptNo: 'INV/20261004/00188', confidence: 97.8 },
+  { id: 'TX-1004', date: '02 Okt 2026', time: '18:30 WIB', merchant: 'Starbucks Coffee Galaxy Mall', itemsCount: 1, amount: 62000, type: 'expense', account: 'GoPay Premium', category: '☕ Kafe & Hiburan', status: 'Verified OCR', receiptNo: 'SBX-99812-2026', confidence: 99.1 },
+  { id: 'TX-1005', date: '01 Okt 2026', time: '08:00 WIB', merchant: 'PT Inovasi Digital Nusantara', itemsCount: 1, amount: 7500000, type: 'income', account: 'BCA Utama', category: '💼 Pemasukan Utama', status: 'Manual Bank', receiptNo: 'PAYROLL-20261001', confidence: 100 }
+];
+
+let ocrSettingsData = {
+  ocrEngine: 'Tesseract 5.4 Neural + Vision LLM',
+  confidenceThreshold: 85,
+  autoCategorization: true,
+  currency: 'IDR (Rp)',
+  receiptRetentionDays: 90,
+  aiVisionModel: 'Gemini 3.5 Flash Vision',
+  autoSplitItems: true,
+  autoDebitAccount: 'BCA Utama'
+};
+
+// GET /api/smartfin/dashboard
+exports.getDashboard = async (req, res, next) => {
+  try {
+    const totalBalance = accountsData.reduce((sum, a) => sum + (parseFloat(a.balance) || 0), 0);
+    const monthExpenses = transactionsData.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
+    const monthIncome = transactionsData.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
+
+    const activeEnvelopesCount = budgetsData.length;
+    const totalPlafon = budgetsData.reduce((sum, b) => sum + (b.limit || 0), 0);
+    const totalSpentEnvelopes = budgetsData.reduce((sum, b) => sum + (b.spent || 0), 0);
+
+    const recentTransactions = transactionsData.slice(0, 5);
+
+    // Calculate dynamic category breakdown from envelopes
+    const categoryBreakdown = budgetsData
+      .filter(b => b.spent > 0 || b.limit > 0)
+      .map(b => {
+        const percentage = totalSpentEnvelopes > 0 ? Number(((b.spent / totalSpentEnvelopes) * 100).toFixed(1)) : 0;
+        return {
+          id: b.id,
+          name: b.name,
+          amount: b.spent,
+          percentage
+        };
+      });
+
+    const verifiedCount = transactionsData.filter(t => t.status && t.status.toLowerCase().includes('verified')).length;
+
+    const insights = {
+      verifiedCount: verifiedCount || transactionsData.length,
+      accuracyRate: 99.2,
+      topCategory: categoryBreakdown[0] ? categoryBreakdown[0].name : 'Kebutuhan Dapur',
+      duplicateCount: 0,
+      totalTransactionsCount: transactionsData.length
+    };
+
+    res.json({
+      success: true,
+      summary: {
+        totalBalance,
+        monthExpenses,
+        monthIncome,
+        netIncome: monthIncome - monthExpenses,
+        activeEnvelopesCount,
+        totalPlafon,
+        totalSpentEnvelopes,
+        envelopeBurnRatePct: totalPlafon > 0 ? Number(((totalSpentEnvelopes / totalPlafon) * 100).toFixed(1)) : 0
+      },
+      accounts: accountsData,
+      envelopes: budgetsData,
+      categoryBreakdown,
+      insights,
+      recentTransactions
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+
+// POST /api/smartfin/scan-receipt
+exports.scanReceipt = async (req, res, next) => {
+  try {
+    const { merchant, date, amount, items, category, paymentAccount, receiptNo } = req.body;
+
+    const parsedMerchant = merchant || 'Indomaret / Alfamart Superstore';
+    const parsedAmount = Number(amount) || 48500;
+    const parsedCategory = category || '🥫 Kebutuhan Dapur';
+    const targetAccountName = paymentAccount || 'BCA Utama';
+
+    const newTxId = 'TX-' + Date.now().toString().slice(-4);
+    const dateFormatted = date || new Date().toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
+    const timeFormatted = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WIB';
+
+    const newTx = {
+      id: newTxId,
+      date: dateFormatted,
+      time: timeFormatted,
+      merchant: parsedMerchant,
+      itemsCount: Array.isArray(items) ? items.length : 3,
+      amount: parsedAmount,
+      type: 'expense',
+      account: targetAccountName,
+      category: parsedCategory,
+      status: 'Verified OCR AI',
+      receiptNo: receiptNo || 'OCR-' + Date.now().toString().slice(-6),
+      confidence: 99.2
+    };
+
+    // Add to transactions list
+    transactionsData.unshift(newTx);
+
+    // Update account balance
+    const targetAcc = accountsData.find(a => a.name.toLowerCase() === targetAccountName.toLowerCase() || a.id === targetAccountName) || accountsData[0];
+    if (targetAcc) {
+      targetAcc.balance = Math.max(0, targetAcc.balance - parsedAmount);
+
+      if (!mutationsData[targetAcc.id]) mutationsData[targetAcc.id] = [];
+      mutationsData[targetAcc.id].unshift({
+        id: 'MUT-' + Date.now().toString().slice(-4),
+        date: `${dateFormatted} · ${timeFormatted}`,
+        merchant: parsedMerchant,
+        category: parsedCategory,
+        amount: parsedAmount,
+        type: 'expense',
+        method: targetAcc.type,
+        invoice: newTx.receiptNo
+      });
+    }
+
+    // Deduct envelope budget
+    const targetEnv = budgetsData.find(b => b.name.toLowerCase().includes(parsedCategory.toLowerCase()) || parsedCategory.toLowerCase().includes(b.category.toLowerCase()));
+    if (targetEnv) {
+      targetEnv.spent += parsedAmount;
+    }
+
+    res.status(201).json({
+      success: true,
+      message: `Struk "${parsedMerchant}" sebesar Rp ${parsedAmount.toLocaleString('id-ID')} berhasil dipindai OCR dan dicatat di Backend!`,
+      transaction: newTx,
+      scannedItems: items || [
+        { name: 'Minyak Goreng Tropical 2L', qty: 1, price: 34500 },
+        { name: 'Gula Pasir Gulaku 1kg', qty: 1, price: 14000 }
+      ]
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// GET /api/smartfin/transactions
+exports.getTransactions = async (req, res, next) => {
+  try {
+    const { search, category, type } = req.query;
+
+    let result = [...transactionsData];
+
+    if (search) {
+      const q = search.toLowerCase();
+      result = result.filter(t => t.merchant.toLowerCase().includes(q) || t.receiptNo.toLowerCase().includes(q));
+    }
+
+    if (category && category !== 'all') {
+      result = result.filter(t => t.category.toLowerCase().includes(category.toLowerCase()));
+    }
+
+    if (type && type !== 'all') {
+      result = result.filter(t => t.type === type);
+    }
+
+    const totalExpense = result.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
+    const totalIncome = result.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
+
+    res.json({
+      success: true,
+      transactions: result,
+      summary: {
+        totalCount: result.length,
+        totalExpense,
+        totalIncome,
+        netAmount: totalIncome - totalExpense
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// POST /api/smartfin/transactions
+exports.createTransaction = async (req, res, next) => {
+  try {
+    const { merchant, amount, type, category, account, date, notes } = req.body;
+
+    if (!merchant || !amount) {
+      return res.status(400).json({ success: false, message: 'Merchant dan nominal transaksi wajib diisi.' });
+    }
+
+    const numAmount = Number(amount) || 0;
+    const txType = type || 'expense';
+    const txAccount = account || 'BCA Utama';
+    const txCategory = category || 'Lain-lain';
+
+    const newTx = {
+      id: 'TX-' + Date.now().toString().slice(-4),
+      date: date || new Date().toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }),
+      time: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WIB',
+      merchant,
+      itemsCount: 1,
+      amount: numAmount,
+      type: txType,
+      account: txAccount,
+      category: txCategory,
+      status: 'Manual Input',
+      receiptNo: 'MANUAL-' + Date.now().toString().slice(-6),
+      confidence: 100
+    };
+
+    transactionsData.unshift(newTx);
+
+    // Update account balance
+    const targetAcc = accountsData.find(a => a.name.toLowerCase() === txAccount.toLowerCase() || a.id === txAccount) || accountsData[0];
+    if (targetAcc) {
+      if (txType === 'expense') {
+        targetAcc.balance = Math.max(0, targetAcc.balance - numAmount);
+      } else {
+        targetAcc.balance += numAmount;
+      }
+
+      if (!mutationsData[targetAcc.id]) mutationsData[targetAcc.id] = [];
+      mutationsData[targetAcc.id].unshift({
+        id: 'MUT-' + Date.now().toString().slice(-4),
+        date: `${newTx.date} · ${newTx.time}`,
+        merchant,
+        category: txCategory,
+        amount: numAmount,
+        type: txType,
+        method: targetAcc.type,
+        invoice: newTx.receiptNo
+      });
+    }
+
+    res.status(201).json({
+      success: true,
+      message: `Transaksi "${merchant}" berhasil dicatat di Backend API!`,
+      transaction: newTx,
+      transactions: transactionsData
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// DELETE /api/smartfin/transactions/:id
+exports.deleteTransaction = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const target = transactionsData.find(t => t.id === id);
+
+    if (!target) {
+      return res.status(404).json({ success: false, message: 'Transaksi tidak ditemukan.' });
+    }
+
+    transactionsData = transactionsData.filter(t => t.id !== id);
+
+    res.json({
+      success: true,
+      message: `Transaksi "${target.merchant}" berhasil dihapus dari Backend.`,
+      transactions: transactionsData
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// GET /api/smartfin/reports
+exports.getReports = async (req, res, next) => {
+  try {
+    const categoryTotals = {};
+    transactionsData.filter(t => t.type === 'expense').forEach(t => {
+      categoryTotals[t.category] = (categoryTotals[t.category] || 0) + t.amount;
+    });
+
+    const categoryBreakdown = Object.entries(categoryTotals).map(([name, amount]) => ({
+      name,
+      amount,
+      percentage: Number(((amount / (transactionsData.filter(t => t.type === 'expense').reduce((s, x) => s + x.amount, 0) || 1)) * 100).toFixed(1))
+    }));
+
+    const monthlyTrends = [
+      { month: 'Mei', income: 7500000, expense: 4100000 },
+      { month: 'Jun', income: 7500000, expense: 3900000 },
+      { month: 'Jul', income: 8200000, expense: 4400000 },
+      { month: 'Agu', income: 7500000, expense: 3700000 },
+      { month: 'Sep', income: 7800000, expense: 4050000 },
+      { month: 'Okt', income: 7500000, expense: transactionsData.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0) }
+    ];
+
+    res.json({
+      success: true,
+      categoryBreakdown,
+      monthlyTrends,
+      topMerchants: [
+        { name: 'Superindo Merr Surabaya', count: 8, total: 1250000 },
+        { name: 'Indomaret Merr', count: 12, total: 840000 },
+        { name: 'Kopi Kenangan Galaxy Mall', count: 6, total: 340000 },
+        { name: 'Starbucks Coffee', count: 4, total: 248000 }
+      ],
+      ocrAccuracyRate: 98.9
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+let masterCategoriesData = [
+  { id: 'cat-1', name: 'Kebutuhan Dapur & Sembako', icon: '🥫', type: 'Pengeluaran' },
+  { id: 'cat-2', name: 'Makanan, Kafe & Resto', icon: '☕', type: 'Pengeluaran' },
+  { id: 'cat-3', name: 'Transportasi & Bensin', icon: '🚗', type: 'Pengeluaran' },
+  { id: 'cat-4', name: 'Perlengkapan Rumah', icon: '🧼', type: 'Pengeluaran' },
+  { id: 'cat-5', name: 'Tagihan & Utilitas', icon: '⚡', type: 'Pengeluaran' },
+  { id: 'cat-6', name: 'Gaji & Pemasukan Tetap', icon: '💼', type: 'Pemasukan' }
+];
+
+let userProfileData = {
+  name: 'Alfian S.',
+  email: 'alfian@smartfin.id',
+  role: 'Administrator',
+  securityLevel: 'AES-256 Cloud Sync'
+};
+
+// GET /api/smartfin/settings
+exports.getSettings = async (req, res, next) => {
+  try {
+    res.json({
+      success: true,
+      settings: ocrSettingsData,
+      categories: masterCategoriesData,
+      profile: userProfileData,
+      accounts: accountsData
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// PUT /api/smartfin/settings
+exports.updateSettings = async (req, res, next) => {
+  try {
+    const { settings, profile } = req.body;
+    if (settings) ocrSettingsData = { ...ocrSettingsData, ...settings };
+    if (profile) userProfileData = { ...userProfileData, ...profile };
+
+    res.json({
+      success: true,
+      message: 'Pengaturan OCR, profil, dan parameter AI berhasil disimpan ke Backend Server!',
+      settings: ocrSettingsData,
+      profile: userProfileData
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// GET /api/smartfin/categories
+exports.getCategories = async (req, res, next) => {
+  try {
+    res.json({
+      success: true,
+      categories: masterCategoriesData
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// POST /api/smartfin/categories
+exports.createCategory = async (req, res, next) => {
+  try {
+    const { name, icon, type } = req.body;
+    if (!name) {
+      return res.status(400).json({ success: false, message: 'Nama kategori wajib diisi.' });
+    }
+
+    const newCat = {
+      id: 'cat-' + Date.now(),
+      name: name.trim(),
+      icon: icon || '🏷️',
+      type: type || 'Pengeluaran'
+    };
+
+    masterCategoriesData.push(newCat);
+
+    res.status(201).json({
+      success: true,
+      message: `Kategori "${name}" berhasil ditambahkan ke Backend Server!`,
+      category: newCat,
+      categories: masterCategoriesData
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// DELETE /api/smartfin/categories/:id
+exports.deleteCategory = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const target = masterCategoriesData.find(c => c.id === id);
+
+    if (!target) {
+      return res.status(404).json({ success: false, message: 'Kategori tidak ditemukan.' });
+    }
+
+    masterCategoriesData = masterCategoriesData.filter(c => c.id !== id);
+
+    res.json({
+      success: true,
+      message: `Kategori "${target.name}" berhasil dihapus dari Backend Server.`,
+      categories: masterCategoriesData
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+

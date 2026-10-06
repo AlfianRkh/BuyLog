@@ -77,20 +77,20 @@ const StockPantryDashboardPage = () => {
         <div className="sp-title-group">
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <span className="sp-badge-live">StockPantry Engine</span>
-            <span style={{ fontSize: '0.8125rem', color: '#10b981', fontWeight: 600 }}>🟢 Sinkronisasi Realtime</span>
+            <span style={{ fontSize: '0.8125rem', color: '#047857', fontWeight: 700 }}>🟢 Sinkronisasi Realtime BE</span>
           </div>
           <h1 className="sp-page-title">
             <Refrigerator className="sp-text-primary" size={28} />
-            Dashboard Inventaris Dapur & Kulkas
+            Dashboard Inventaris Dapur &amp; Kulkas
           </h1>
-          <p className="sp-page-subtitle">
+          <p className="sp-page-subtitle" style={{ color: '#334155', fontWeight: 600 }}>
             Pantau stok bahan pangan, mitigasi food waste, dan sinkronkan daftar belanja secara otomatis.
           </p>
         </div>
 
         <div className="sp-actions-group">
           <Link to="/stockpantry/shopping-list" className="sp-btn-secondary">
-            <ShoppingCart size={18} color="#f59e0b" />
+            <ShoppingCart size={18} color="#d97706" />
             <span>Shopping List ({totalNeededShopping})</span>
           </Link>
           <button onClick={() => setIsAddModalOpen(true)} className="sp-btn-primary">
@@ -105,64 +105,64 @@ const StockPantryDashboardPage = () => {
         <div className="sp-kpi-card">
           <div className="sp-kpi-header">
             <div>
-              <span className="sp-kpi-label">Total Stok Tersimpan</span>
-              <div className="sp-kpi-value">{totalItems} Item</div>
+              <span className="sp-kpi-label" style={{ color: '#475569', fontWeight: 700 }}>Total Stok Tersimpan</span>
+              <div className="sp-kpi-value" style={{ color: '#0f172a' }}>{totalItems} Item</div>
             </div>
             <div className="sp-kpi-icon-box">
               <Boxes size={22} />
             </div>
           </div>
           <div className="sp-kpi-footer">
-            <span>Valuasi Stok Rumah</span>
-            <strong style={{ color: '#047857' }}>Rp {totalValuation.toLocaleString('id-ID')}</strong>
+            <span style={{ color: '#334155', fontWeight: 600 }}>Valuasi Stok Rumah</span>
+            <strong style={{ color: '#047857', fontWeight: 800 }}>Rp {totalValuation.toLocaleString('id-ID')}</strong>
           </div>
         </div>
 
         <div className="sp-kpi-card" style={{ borderColor: lowItems.length > 0 ? '#fde68a' : 'var(--gray-200)' }}>
           <div className="sp-kpi-header">
             <div>
-              <span className="sp-kpi-label" style={{ color: '#b45309' }}>Stok Menipis / Habis</span>
-              <div className="sp-kpi-value" style={{ color: '#b45309' }}>{lowItems.length} Item</div>
+              <span className="sp-kpi-label" style={{ color: '#92400e', fontWeight: 700 }}>Stok Menipis / Habis</span>
+              <div className="sp-kpi-value" style={{ color: '#92400e' }}>{lowItems.length} Item</div>
             </div>
-            <div className="sp-kpi-icon-box" style={{ backgroundColor: '#fffbeb', color: '#b45309' }}>
+            <div className="sp-kpi-icon-box" style={{ backgroundColor: '#fffbeb', color: '#92400e' }}>
               <AlertTriangle size={22} />
             </div>
           </div>
           <div className="sp-kpi-footer">
-            <span>Perlu Segera Restock</span>
-            <strong style={{ color: '#b45309' }}>{lowItems.filter(i => i.qty === 0).length} Habis Total</strong>
+            <span style={{ color: '#475569', fontWeight: 600 }}>Perlu Segera Restock</span>
+            <strong style={{ color: '#92400e', fontWeight: 800 }}>{lowItems.filter(i => i.qty === 0).length} Habis Total</strong>
           </div>
         </div>
 
         <div className="sp-kpi-card" style={{ borderColor: expiringItems.length > 0 ? '#ffedd5' : 'var(--gray-200)' }}>
           <div className="sp-kpi-header">
             <div>
-              <span className="sp-kpi-label" style={{ color: '#c2410c' }}>Kedaluwarsa Kritis</span>
-              <div className="sp-kpi-value" style={{ color: '#c2410c' }}>{expiringItems.length} Item</div>
+              <span className="sp-kpi-label" style={{ color: '#9a3412', fontWeight: 700 }}>Kedaluwarsa Kritis</span>
+              <div className="sp-kpi-value" style={{ color: '#9a3412' }}>{expiringItems.length} Item</div>
             </div>
-            <div className="sp-kpi-icon-box" style={{ backgroundColor: '#fff7ed', color: '#c2410c' }}>
+            <div className="sp-kpi-icon-box" style={{ backgroundColor: '#fff7ed', color: '#9a3412' }}>
               <Clock size={22} />
             </div>
           </div>
           <div className="sp-kpi-footer">
-            <span>Batas Masa Simpan</span>
-            <strong style={{ color: '#c2410c' }}>&le; 3 Hari Lagi</strong>
+            <span style={{ color: '#475569', fontWeight: 600 }}>Batas Masa Simpan</span>
+            <strong style={{ color: '#9a3412', fontWeight: 800 }}>&le; 3 Hari Lagi</strong>
           </div>
         </div>
 
         <div className="sp-kpi-card">
           <div className="sp-kpi-header">
             <div>
-              <span className="sp-kpi-label">Smart Shopping List</span>
-              <div className="sp-kpi-value">{totalNeededShopping} Item</div>
+              <span className="sp-kpi-label" style={{ color: '#475569', fontWeight: 700 }}>Smart Shopping List</span>
+              <div className="sp-kpi-value" style={{ color: '#0f172a' }}>{totalNeededShopping} Item</div>
             </div>
             <div className="sp-kpi-icon-box" style={{ backgroundColor: '#fef3c7', color: '#d97706' }}>
               <ShoppingCart size={22} />
             </div>
           </div>
           <div className="sp-kpi-footer">
-            <span>Estimasi Kebutuhan</span>
-            <strong style={{ color: '#d97706' }}>Rp {shoppingList.reduce((s, i) => s + i.price, 0).toLocaleString('id-ID')}</strong>
+            <span style={{ color: '#475569', fontWeight: 600 }}>Estimasi Kebutuhan</span>
+            <strong style={{ color: '#b45309', fontWeight: 800 }}>Rp {shoppingList.reduce((s, i) => s + i.price, 0).toLocaleString('id-ID')}</strong>
           </div>
         </div>
       </div>
@@ -171,15 +171,15 @@ const StockPantryDashboardPage = () => {
       <div className="sp-card" style={{ borderLeft: '4px solid #ef4444' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
           <div>
-            <h3 style={{ margin: 0, fontSize: '1.125rem', fontWeight: 700, color: 'var(--gray-900)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <h3 style={{ margin: 0, fontSize: '1.125rem', fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
               <Clock color="#ef4444" size={20} />
               Prioritas Habiskan Segera! (Zero Food Waste)
             </h3>
-            <span style={{ fontSize: '0.8125rem', color: 'var(--gray-500)' }}>
+            <span style={{ fontSize: '0.8125rem', color: '#334155', fontWeight: 600 }}>
               Bahan yang harus dikonsumsi sebelum melewati tanggal kedaluwarsa
             </span>
           </div>
-          <Link to="/stockpantry/expiry" style={{ fontSize: '0.875rem', fontWeight: 600, color: '#10b981', display: 'flex', alignItems: 'center', gap: '4px', textDecoration: 'none' }}>
+          <Link to="/stockpantry/expiry" style={{ fontSize: '0.875rem', fontWeight: 700, color: '#059669', display: 'flex', alignItems: 'center', gap: '4px', textDecoration: 'none' }}>
             <span>Lihat Timeline</span>
             <ChevronRight size={16} />
           </Link>
@@ -187,18 +187,18 @@ const StockPantryDashboardPage = () => {
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
           {expiringItems.length === 0 ? (
-            <div style={{ padding: '24px', textAlign: 'center', backgroundColor: '#ecfdf5', borderRadius: 'var(--radius-md)', color: '#047857', fontWeight: 600 }}>
+            <div style={{ padding: '24px', textAlign: 'center', backgroundColor: '#ecfdf5', borderRadius: 'var(--radius-md)', color: '#047857', fontWeight: 700 }}>
               🎉 Tidak ada bahan makanan kritis! Semua stok dalam batas waktu aman.
             </div>
           ) : (
             expiringItems.slice(0, 3).map(item => (
-              <div key={item.id} style={{ border: '1px solid #fee2e2', borderRadius: 'var(--radius-md)', padding: '16px', backgroundColor: '#fff5f5', display: 'flex', flexDirection: 'column', justifyBetween: 'space-between', gap: '12px' }}>
+              <div key={item.id} style={{ border: '1px solid #fee2e2', borderRadius: 'var(--radius-md)', padding: '16px', backgroundColor: '#fff5f5', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: '12px' }}>
                 <div style={{ display: 'flex', gap: '12px' }}>
                   <img src={item.img} alt={item.name} style={{ width: '64px', height: '64px', borderRadius: 'var(--radius-md)', objectFit: 'cover' }} />
                   <div style={{ minWidth: 0, flex: 1 }}>
-                    <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#c2410c', textTransform: 'uppercase' }}>{item.expiryStatus}</span>
-                    <h4 style={{ margin: '2px 0 0', fontSize: '0.9375rem', fontWeight: 700, color: 'var(--gray-900)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.name}</h4>
-                    <span style={{ fontSize: '0.8125rem', color: 'var(--gray-600)' }}>{item.zoneIcon} {item.zone} · Sisa: <strong>{item.qty} {item.unit}</strong></span>
+                    <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#c2410c', textTransform: 'uppercase' }}>{item.expiryStatus}</span>
+                    <h4 style={{ margin: '2px 0 0', fontSize: '0.9375rem', fontWeight: 800, color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.name}</h4>
+                    <span style={{ fontSize: '0.8125rem', color: '#334155', fontWeight: 600 }}>{item.zoneIcon} {item.zone} · Sisa: <strong style={{ color: '#0f172a' }}>{item.qty} {item.unit}</strong></span>
                   </div>
                 </div>
 
@@ -208,14 +208,14 @@ const StockPantryDashboardPage = () => {
                       consumeItem(item.id, 1, 'Habiskan karena mendekati expired');
                       showToast(`Konsumsi 1 ${item.unit} ${item.name} tercatat!`);
                     }}
-                    style={{ flex: 1, padding: '8px 12px', borderRadius: 'var(--radius-md)', backgroundColor: '#10b981', color: '#ffffff', border: 'none', fontWeight: 600, fontSize: '0.8125rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+                    style={{ flex: 1, padding: '8px 12px', borderRadius: 'var(--radius-md)', backgroundColor: '#10b981', color: '#ffffff', border: 'none', fontWeight: 700, fontSize: '0.8125rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
                   >
                     <Utensils size={14} />
                     <span>Pakai Sekarang</span>
                   </button>
                   <Link
                     to="/stockpantry/shopping-list"
-                    style={{ padding: '8px 12px', borderRadius: 'var(--radius-md)', backgroundColor: '#ffffff', border: '1px solid var(--gray-300)', color: 'var(--gray-700)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                    style={{ padding: '8px 12px', borderRadius: 'var(--radius-md)', backgroundColor: '#ffffff', border: '1px solid #cbd5e1', color: '#0f172a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                     title="Tambah Pengganti ke Shopping List"
                   >
                     <ShoppingCart size={16} color="#d97706" />
@@ -232,37 +232,57 @@ const StockPantryDashboardPage = () => {
         {/* Quick Consume Widget */}
         <div className="sp-card">
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-            <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 700, color: 'var(--gray-900)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Zap color="#10b981" size={18} />
+            <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Zap color="#059669" size={18} />
               Quick Consume Widget
             </h3>
-            <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#10b981', backgroundColor: '#ecfdf5', padding: '2px 8px', borderRadius: 'var(--radius-full)' }}>1-Klik Catat</span>
+            <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#047857', backgroundColor: '#ecfdf5', padding: '2px 8px', borderRadius: 'var(--radius-full)' }}>1-Klik Catat</span>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <div>
-              <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: 'var(--gray-600)', textTransform: 'uppercase', marginBottom: '4px' }}>Pilih Bahan Dipakai</label>
+              <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: '#0f172a', textTransform: 'uppercase', marginBottom: '4px' }}>Pilih Bahan Dipakai</label>
               <select
                 value={selectedQuickItem}
                 onChange={(e) => setSelectedQuickItem(e.target.value)}
-                style={{ width: '100%', padding: '10px 14px', borderRadius: 'var(--radius-md)', border: '1px solid var(--gray-300)', fontSize: '0.875rem', backgroundColor: '#ffffff' }}
+                style={{
+                  width: '100%',
+                  padding: '10px 14px',
+                  borderRadius: 'var(--radius-md)',
+                  border: '2px solid #0f172a',
+                  fontSize: '0.875rem',
+                  fontWeight: 700,
+                  color: '#0f172a',
+                  backgroundColor: '#ffffff',
+                  outline: 'none'
+                }}
               >
-                <option value="">-- Pilih Bahan Makanan --</option>
+                <option value="" style={{ color: '#0f172a', backgroundColor: '#ffffff', fontWeight: 600 }}>-- Pilih Bahan Makanan --</option>
                 {pantryItems.filter(i => i.qty > 0).map(i => (
-                  <option key={i.id} value={i.id}>{i.name} (Tersedia: {i.qty} {i.unit})</option>
+                  <option key={i.id} value={i.id} style={{ color: '#0f172a', backgroundColor: '#ffffff', fontWeight: 600 }}>{i.name} (Tersedia: {i.qty} {i.unit})</option>
                 ))}
               </select>
             </div>
 
             <div style={{ display: 'flex', gap: '8px' }}>
               <div style={{ flex: 1 }}>
-                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: 'var(--gray-600)', textTransform: 'uppercase', marginBottom: '4px' }}>Jumlah</label>
+                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: '#0f172a', textTransform: 'uppercase', marginBottom: '4px' }}>Jumlah</label>
                 <input
                   type="number"
                   step="any"
                   value={quickQty}
                   onChange={(e) => setQuickQty(e.target.value)}
-                  style={{ width: '100%', padding: '10px 14px', borderRadius: 'var(--radius-md)', border: '1px solid var(--gray-300)', fontSize: '0.875rem' }}
+                  style={{
+                    width: '100%',
+                    padding: '10px 14px',
+                    borderRadius: 'var(--radius-md)',
+                    border: '2px solid #0f172a',
+                    fontSize: '0.875rem',
+                    fontWeight: 700,
+                    color: '#0f172a',
+                    backgroundColor: '#ffffff',
+                    outline: 'none'
+                  }}
                 />
               </div>
               <div style={{ display: 'flex', alignItems: 'flex-end' }}>
@@ -283,24 +303,24 @@ const StockPantryDashboardPage = () => {
         {/* Critical Restock List */}
         <div className="sp-card">
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-            <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 700, color: 'var(--gray-900)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
               <AlertTriangle color="#b45309" size={18} />
-              Stok Kritis & Perlu Restock
+              Stok Kritis &amp; Perlu Restock
             </h3>
-            <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--gray-500)' }}>{lowItems.length} Item Menipis</span>
+            <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#475569' }}>{lowItems.length} Item Menipis</span>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             {lowItems.length === 0 ? (
-              <p style={{ margin: 0, color: 'var(--gray-500)', fontSize: '0.875rem' }}>Semua stok bahan dalam kondisi aman!</p>
+              <p style={{ margin: 0, color: '#334155', fontSize: '0.875rem', fontWeight: 600 }}>Semua stok bahan dalam kondisi aman!</p>
             ) : (
               lowItems.slice(0, 4).map(item => (
-                <div key={item.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', borderRadius: 'var(--radius-md)', backgroundColor: 'var(--gray-50)', border: '1px solid var(--gray-200)' }}>
+                <div key={item.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', borderRadius: 'var(--radius-md)', backgroundColor: '#f8fafc', border: '1px solid #cbd5e1' }}>
                   <div>
-                    <div style={{ fontWeight: 700, fontSize: '0.875rem', color: 'var(--gray-900)' }}>{item.name}</div>
-                    <span style={{ fontSize: '0.75rem', color: 'var(--gray-500)' }}>{item.zoneIcon} {item.zone} · Sisa: <strong style={{ color: item.qty === 0 ? '#b91c1c' : '#b45309' }}>{item.qty} {item.unit}</strong></span>
+                    <div style={{ fontWeight: 800, fontSize: '0.875rem', color: '#0f172a' }}>{item.name}</div>
+                    <span style={{ fontSize: '0.75rem', color: '#334155', fontWeight: 600 }}>{item.zoneIcon} {item.zone} · Sisa: <strong style={{ color: item.qty === 0 ? '#b91c1c' : '#b45309', fontWeight: 800 }}>{item.qty} {item.unit}</strong></span>
                   </div>
-                  <Link to="/stockpantry/shopping-list" style={{ fontSize: '0.75rem', fontWeight: 700, color: '#10b981', textDecoration: 'none', backgroundColor: '#ecfdf5', padding: '4px 10px', borderRadius: 'var(--radius-full)' }}>
+                  <Link to="/stockpantry/shopping-list" style={{ fontSize: '0.75rem', fontWeight: 700, color: '#047857', textDecoration: 'none', backgroundColor: '#ecfdf5', padding: '4px 10px', borderRadius: 'var(--radius-full)' }}>
                     + Ke Shopping List
                   </Link>
                 </div>

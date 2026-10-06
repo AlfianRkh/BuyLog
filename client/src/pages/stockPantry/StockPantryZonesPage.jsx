@@ -20,12 +20,28 @@ import { useStockPantry } from '../../contexts/StockPantryContext';
 import './StockPantryPages.css';
 
 const StockPantryZonesPage = () => {
-  const { zones, addZone } = useStockPantry();
+  const { zones, pantryItems = [], addZone } = useStockPantry();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newZoneName, setNewZoneName] = useState('');
   const [newZoneType, setNewZoneType] = useState('Chiller');
   const [newZoneTemp, setNewZoneTemp] = useState('2°C - 4°C');
   const [toastMessage, setToastMessage] = useState('');
+
+  const totalSKU = pantryItems.length;
+  const totalValuation = pantryItems.reduce((sum, i) => sum + ((Number(i.price) || 0) * (Number(i.qty) || 0)), 0);
+
+  const getZoneMetrics = (zone) => {
+    const itemsInZone = pantryItems.filter(i =>
+      i.zoneId === zone.id ||
+      (i.zone && i.zone.toLowerCase().includes(zone.name.toLowerCase())) ||
+      (zone.name && zone.name.toLowerCase().includes((i.zone || '').toLowerCase()))
+    );
+    const count = itemsInZone.length;
+    const valuation = itemsInZone.reduce((sum, i) => sum + ((Number(i.price) || 0) * (Number(i.qty) || 0)), 0);
+    const capacityPct = Math.min(100, count * 15);
+    const previews = itemsInZone.map(i => i.name).slice(0, 4);
+    return { count, valuation, capacityPct, previews };
+  };
 
   const showToast = (msg) => {
     setToastMessage(msg);
@@ -79,7 +95,7 @@ const StockPantryZonesPage = () => {
         <div className="sp-title-group">
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <span className="sp-badge-live">Spatial Topology</span>
-            <span style={{ fontSize: '0.8125rem', color: '#10b981', fontWeight: 600 }}>🟢 v2.4 Live Sync</span>
+            <span style={{ fontSize: '0.8125rem', color: '#10b981', fontWeight: 600 }}>🟢 Live Data Sync</span>
           </div>
           <h1 className="sp-page-title">
             <MapPin className="sp-text-primary" size={28} />
@@ -124,7 +140,7 @@ const StockPantryZonesPage = () => {
           <div className="sp-kpi-header">
             <div>
               <span className="sp-kpi-label">SKU Terindeks</span>
-              <div className="sp-kpi-value">42 Item</div>
+              <div className="sp-kpi-value">{totalSKU} Item</div>
             </div>
             <div className="sp-kpi-icon-box" style={{ backgroundColor: '#fffbeb', color: '#b45309' }}>
               <Boxes size={22} />
@@ -132,7 +148,7 @@ const StockPantryZonesPage = () => {
           </div>
           <div className="sp-kpi-footer">
             <span>Total Valuasi Fisik</span>
-            <strong style={{ color: '#b45309' }}>Rp 838.000</strong>
+            <strong style={{ color: '#b45309' }}>Rp {totalValuation.toLocaleString('id-ID')}</strong>
           </div>
         </div>
 
@@ -140,7 +156,9 @@ const StockPantryZonesPage = () => {
           <div className="sp-kpi-header">
             <div>
               <span className="sp-kpi-label">Beban Volume</span>
-              <div className="sp-kpi-value" style={{ color: '#047857' }}>64%</div>
+              <div className="sp-kpi-value" style={{ color: '#047857' }}>
+                {totalSKU > 0 ? `${Math.min(100, Math.round(totalSKU * 5))}%` : '0%'}
+              </div>
             </div>
             <div className="sp-kpi-icon-box" style={{ backgroundColor: '#ecfdf5', color: '#047857' }}>
               <PieChart size={22} />
@@ -148,7 +166,7 @@ const StockPantryZonesPage = () => {
           </div>
           <div className="sp-kpi-footer">
             <span>Status Pengisian</span>
-            <strong style={{ color: '#047857' }}>Optimal</strong>
+            <strong style={{ color: '#047857' }}>{totalSKU > 0 ? 'Optimal' : 'Kosong'}</strong>
           </div>
         </div>
 
@@ -163,7 +181,7 @@ const StockPantryZonesPage = () => {
             </div>
           </div>
           <div className="sp-kpi-footer">
-            <span>Chiller & Freezer</span>
+            <span>Chiller &amp; Freezer</span>
             <strong style={{ color: '#10b981' }}>Terkontrol</strong>
           </div>
         </div>
@@ -172,84 +190,92 @@ const StockPantryZonesPage = () => {
       {/* Grid of Storage Zones */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
         <h3 style={{ margin: 0, fontSize: '1.125rem', fontWeight: 700, color: 'var(--gray-900)' }}>
-          Katalog Lokasi & Kapasitas Wadah
+          Katalog Lokasi &amp; Kapasitas Wadah
         </h3>
 
         <div className="sp-grid-cards">
-          {zones.map(zone => (
-            <div key={zone.id} className="sp-pantry-card" style={{ borderTop: `4px solid ${zone.color}` }}>
-              <div>
-                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '12px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <div style={{
-                      width: '44px',
-                      height: '44px',
-                      borderRadius: 'var(--radius-md)',
-                      backgroundColor: `${zone.color}15`,
-                      color: zone.color,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontSize: '1.25rem'
-                    }}>
-                      <Boxes size={22} />
+          {zones.map(zone => {
+            const metrics = getZoneMetrics(zone);
+            return (
+              <div key={zone.id} className="sp-pantry-card" style={{ borderTop: `4px solid ${zone.color}` }}>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '12px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <div style={{
+                        width: '44px',
+                        height: '44px',
+                        borderRadius: 'var(--radius-md)',
+                        backgroundColor: `${zone.color}15`,
+                        color: zone.color,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '1.25rem'
+                      }}>
+                        <Boxes size={22} />
+                      </div>
+                      <div>
+                        <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: 700, color: 'var(--gray-900)' }}>{zone.name}</h4>
+                        <span style={{ fontSize: '0.75rem', color: zone.color, fontWeight: 600 }}>{zone.type}</span>
+                      </div>
                     </div>
-                    <div>
-                      <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: 700, color: 'var(--gray-900)' }}>{zone.name}</h4>
-                      <span style={{ fontSize: '0.75rem', color: zone.color, fontWeight: 600 }}>{zone.type}</span>
+                    <span style={{ fontSize: '0.75rem', fontWeight: 700, padding: '4px 8px', borderRadius: 'var(--radius-md)', backgroundColor: `${zone.color}15`, color: zone.color }}>
+                      {zone.temp}
+                    </span>
+                  </div>
+
+                  <p style={{ fontSize: '0.8125rem', color: 'var(--gray-600)', margin: '0 0 12px' }}>
+                    {zone.desc}
+                  </p>
+
+                  <div style={{ padding: '10px', backgroundColor: 'var(--gray-50)', borderRadius: 'var(--radius-md)', margin: '8px 0' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8125rem', marginBottom: '4px' }}>
+                      <span style={{ color: 'var(--gray-600)' }}>Kapasitas Wadah</span>
+                      <strong style={{ color: zone.color }}>{metrics.count} Item ({metrics.capacityPct}%)</strong>
+                    </div>
+                    <div className="sp-progress-bar">
+                      <div className="sp-progress-fill" style={{ width: `${metrics.capacityPct}%`, backgroundColor: zone.color }} />
                     </div>
                   </div>
-                  <span style={{ fontSize: '0.75rem', fontWeight: 700, padding: '4px 8px', borderRadius: 'var(--radius-md)', backgroundColor: `${zone.color}15`, color: zone.color }}>
-                    {zone.temp}
-                  </span>
-                </div>
 
-                <p style={{ fontSize: '0.8125rem', color: 'var(--gray-600)', margin: '0 0 12px' }}>
-                  {zone.desc}
-                </p>
-
-                <div style={{ padding: '10px', backgroundColor: 'var(--gray-50)', borderRadius: 'var(--radius-md)', margin: '8px 0' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8125rem', marginBottom: '4px' }}>
-                    <span style={{ color: 'var(--gray-600)' }}>Kapasitas Wadah</span>
-                    <strong style={{ color: zone.color }}>{zone.capacityPct}% Penuh</strong>
+                  <div style={{ marginTop: '10px' }}>
+                    <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--gray-500)', textTransform: 'uppercase', display: 'block', marginBottom: '6px' }}>
+                      Barang Terdaftar ({metrics.count}):
+                    </span>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                      {metrics.previews.length === 0 ? (
+                        <span style={{ fontSize: '0.75rem', color: 'var(--gray-400)', italic: 'true' }}>
+                          Belum ada bahan terdaftar
+                        </span>
+                      ) : (
+                        metrics.previews.map((p, idx) => (
+                          <span key={idx} style={{ fontSize: '0.75rem', padding: '2px 8px', borderRadius: 'var(--radius-md)', backgroundColor: 'var(--gray-100)', color: 'var(--gray-700)' }}>
+                            {p}
+                          </span>
+                        ))
+                      )}
+                    </div>
                   </div>
-                  <div className="sp-progress-bar">
-                    <div className="sp-progress-fill" style={{ width: `${zone.capacityPct}%`, backgroundColor: zone.color }} />
-                  </div>
-                </div>
-
-                <div style={{ marginTop: '10px' }}>
-                  <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--gray-500)', textTransform: 'uppercase', display: 'block', marginBottom: '6px' }}>
-                    Preview Barang Terdaftar:
-                  </span>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                    {zone.previews.map((p, idx) => (
-                      <span key={idx} style={{ fontSize: '0.75rem', padding: '2px 8px', borderRadius: 'var(--radius-md)', backgroundColor: 'var(--gray-100)', color: 'var(--gray-700)' }}>
-                        {p}
-                      </span>
-                    ))}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', paddingTop: '12px', borderTop: '1px solid var(--gray-100)' }}>
+                    <Link
+                      to="/stockpantry/inventaris"
+                      className="sp-btn-secondary"
+                      style={{ flex: 1, justifyContent: 'center', fontSize: '0.8125rem' }}
+                    >
+                      <span>Lihat Isi Zona</span>
+                      <ArrowRight size={14} />
+                    </Link>
+                    <button
+                      onClick={() => showToast(`Edit zona "${zone.name}" dibuka`)}
+                      style={{ padding: '8px', border: '1px solid var(--gray-200)', borderRadius: 'var(--radius-md)', backgroundColor: '#ffffff', cursor: 'pointer', color: 'var(--gray-600)' }}
+                    >
+                      <Edit size={14} />
+                    </button>
                   </div>
                 </div>
               </div>
-
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', paddingTop: '12px', borderTop: '1px solid var(--gray-100)' }}>
-                <Link
-                  to="/stockpantry/inventaris"
-                  className="sp-btn-secondary"
-                  style={{ flex: 1, justifyContent: 'center', fontSize: '0.8125rem' }}
-                >
-                  <span>Lihat Isi Zona</span>
-                  <ArrowRight size={14} />
-                </Link>
-                <button
-                  onClick={() => showToast(`Edit zona "${zone.name}" dibuka`)}
-                  style={{ padding: '8px', border: '1px solid var(--gray-200)', borderRadius: 'var(--radius-md)', backgroundColor: '#ffffff', cursor: 'pointer', color: 'var(--gray-600)' }}
-                >
-                  <Edit size={14} />
-                </button>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 

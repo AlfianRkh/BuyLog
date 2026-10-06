@@ -79,11 +79,11 @@ const StockPantryInventoryPage = () => {
         <div className="sp-title-group">
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <span className="sp-badge-live">StockPantry Master</span>
-            <span style={{ fontSize: '0.8125rem', color: 'var(--gray-500)' }}>42 SKU Terindeks</span>
+            <span style={{ fontSize: '0.8125rem', color: 'var(--gray-500)' }}>{pantryItems.length} SKU Terindeks</span>
           </div>
           <h1 className="sp-page-title">
             <Package className="sp-text-primary" size={28} />
-            Inventaris & Katalog Dapur
+            Inventaris &amp; Katalog Dapur
           </h1>
           <p className="sp-page-subtitle">
             Katalog lengkap bahan makanan, bumbu, minuman, dan perlengkapan rumah tangga.
@@ -165,7 +165,12 @@ const StockPantryInventoryPage = () => {
 
       {/* Grid of Pantry Cards */}
       <div className="sp-grid-cards">
-        {filteredItems.map(item => {
+        {filteredItems.length === 0 ? (
+          <div style={{ gridColumn: '1 / -1', padding: '40px', textAlign: 'center', backgroundColor: 'var(--gray-50)', borderRadius: 'var(--radius-lg)', color: 'var(--gray-500)', fontSize: '0.9375rem' }}>
+            📦 Belum ada bahan makanan terdaftar di inventaris. Klik "+ Tambah Bahan Baru" untuk menambahkan.
+          </div>
+        ) : (
+          filteredItems.map(item => {
           const pct = Math.min(100, item.maxQty > 0 ? (item.qty / item.maxQty) * 100 : 0);
           return (
             <div key={item.id} className="sp-pantry-card">
@@ -282,7 +287,7 @@ const StockPantryInventoryPage = () => {
               </div>
             </div>
           );
-        })}
+        }))}
       </div>
 
       <AddPantryItemModal

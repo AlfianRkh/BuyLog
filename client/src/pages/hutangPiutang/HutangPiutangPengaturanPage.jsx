@@ -8,20 +8,33 @@ import '../../components/hutangPiutang/NewDebtModal.css';
 const HutangPiutangPengaturanPage = () => {
   const { user, updateUser } = useAuth();
   const [name, setName] = useState(user?.name || '');
-  const [bankInfo, setBankInfo] = useState(user?.bank_account_info || 'BCA: 5410-2391-09 a/n Alfian S.');
+  const [bankInfo, setBankInfo] = useState(user?.bank_account_info || '');
   const [waTemplate, setWaTemplate] = useState(user?.wa_summary_template || '');
   const [dueDays, setDueDays] = useState(user?.reminder_days_before || 3);
   const [loading, setLoading] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
 
-  useEffect(() => {
-    if (user) {
-      setName(user.name || '');
-      setBankInfo(user.bank_account_info || 'BCA: 5410-2391-09 a/n Alfian S.');
-      setWaTemplate(user.wa_summary_template || `Halo {contact_name}, berikut catatan rekap pinjaman kita per {date}:\n\n📌 Catatan pinjaman ke saya:\n{piutang_list}\n\n📌 Catatan pinjaman saya ke kamu:\n{hutang_list}\n\n💵 Posisi Saldo Bersih:\n{net_summary}\n\nNomor Rekening Pembayaran:\n{bank_account}\n\nTerima kasih banyak ya! Semoga lancar rezekinya.`);
-      setDueDays(user.reminder_days_before || 3);
+  const fetchSettings = async () => {
+    try {
+      setLoading(true);
+      const res = await api.debtTracker.getSettings();
+      if (res && res.user) {
+        setName(res.user.name || '');
+        setBankInfo(res.user.bank_account_info || '');
+        setWaTemplate(res.user.wa_summary_template || `Halo {contact_name}, berikut catatan rekap pinjaman kita per {date}:\n\n📌 Catatan pinjaman ke saya:\n{piutang_list}\n\n📌 Catatan pinjaman saya ke kamu:\n{hutang_list}\n\n💵 Posisi Saldo Bersih:\n{net_summary}\n\nNomor Rekening Pembayaran:\n{bank_account}\n\nTerima kasih banyak ya! Semoga lancar rezekinya.`);
+        setDueDays(res.user.reminder_days_before || 3);
+        if (updateUser) updateUser(res.user);
+      }
+    } catch (err) {
+      console.error('Gagal memuat pengaturan WA dari BE:', err);
+    } finally {
+      setLoading(false);
     }
-  }, [user]);
+  };
+
+  useEffect(() => {
+    fetchSettings();
+  }, []);
 
   const showToast = (msg) => {
     setToastMessage(msg);

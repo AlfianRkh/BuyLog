@@ -11,6 +11,9 @@ const locationRoutes = require('./locations');
 const uploadRoutes = require('./upload');
 const debtTrackerRoutes = require('./debtTracker');
 const priceRadarRoutes = require('./priceRadar');
+const smartFinRoutes = require('./smartFin');
+const wishboardRoutes = require('./wishboard');
+const stockPantryRoutes = require('./stockPantry');
 
 const router = express.Router();
 
@@ -26,5 +29,8 @@ router.use('/locations', locationRoutes);
 router.use('/upload', uploadRoutes);
 router.use('/debt-tracker', debtTrackerRoutes);
 router.use('/priceradar', priceRadarRoutes);
+router.use('/smartfin', smartFinRoutes);
+router.use('/wishboard', wishboardRoutes);
+router.use('/stockpantry', stockPantryRoutes);
 
 module.exports = router;

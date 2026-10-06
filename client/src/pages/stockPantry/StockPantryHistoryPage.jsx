@@ -37,6 +37,10 @@ const StockPantryHistoryPage = () => {
     showToast(`Undo Berhasil: Pemakaian "${name}" (${change}) dibatalkan.`);
   };
 
+  const totalKonsumsi = logs.filter(l => l.category === 'konsumsi' && !l.undone).length;
+  const wasteLogs = logs.filter(l => l.category === 'waste' && !l.undone);
+  const totalWaste = wasteLogs.length;
+
   return (
     <div className="sp-container">
       {toastMessage && (
@@ -70,7 +74,7 @@ const StockPantryHistoryPage = () => {
           </div>
           <h1 className="sp-page-title">
             <History className="sp-text-primary" size={28} />
-            Riwayat Konsumsi & Audit Log Dapur
+            Riwayat Konsumsi &amp; Audit Log Dapur
           </h1>
           <p className="sp-page-subtitle">
             Lacak laju konsumsi harian, histori restock, pembuangan food waste, dan fitur Undo pencatatan.
@@ -84,15 +88,15 @@ const StockPantryHistoryPage = () => {
           <div className="sp-kpi-header">
             <div>
               <span className="sp-kpi-label">Total Transaksi Konsumsi</span>
-              <div className="sp-kpi-value">68 Masak</div>
+              <div className="sp-kpi-value">{totalKonsumsi} Catatan</div>
             </div>
             <div className="sp-kpi-icon-box">
               <Utensils size={22} />
             </div>
           </div>
           <div className="sp-kpi-footer">
-            <span>Tren Mingguan</span>
-            <strong style={{ color: '#10b981' }}>+12.4% Optimal</strong>
+            <span>Aktivitas Masak</span>
+            <strong style={{ color: '#10b981' }}>{logs.length} Total Log</strong>
           </div>
         </div>
 
@@ -100,15 +104,17 @@ const StockPantryHistoryPage = () => {
           <div className="sp-kpi-header">
             <div>
               <span className="sp-kpi-label" style={{ color: '#b91c1c' }}>Food Waste Terbuang</span>
-              <div className="sp-kpi-value" style={{ color: '#b91c1c' }}>1 Item</div>
+              <div className="sp-kpi-value" style={{ color: '#b91c1c' }}>{totalWaste} Item</div>
             </div>
             <div className="sp-kpi-icon-box" style={{ backgroundColor: '#fef2f2', color: '#b91c1c' }}>
               <Trash2 size={22} />
             </div>
           </div>
           <div className="sp-kpi-footer">
-            <span>Estimasi Kerugian</span>
-            <strong style={{ color: '#b91c1c' }}>Rp 14.000</strong>
+            <span>Status Mitigasi Waste</span>
+            <strong style={{ color: totalWaste > 0 ? '#b91c1c' : '#10b981' }}>
+              {totalWaste > 0 ? 'Perlu Perhatian' : 'Sangat Baik'}
+            </strong>
           </div>
         </div>
 
@@ -116,7 +122,9 @@ const StockPantryHistoryPage = () => {
           <div className="sp-kpi-header">
             <div>
               <span className="sp-kpi-label">Efisiensi Konsumsi</span>
-              <div className="sp-kpi-value" style={{ color: '#047857' }}>98.5%</div>
+              <div className="sp-kpi-value" style={{ color: '#047857' }}>
+                {logs.length > 0 ? `${Math.round(((logs.length - totalWaste) / logs.length) * 100)}%` : '100%'}
+              </div>
             </div>
             <div className="sp-kpi-icon-box" style={{ backgroundColor: '#ecfdf5', color: '#047857' }}>
               <TrendingUp size={22} />
@@ -170,7 +178,12 @@ const StockPantryHistoryPage = () => {
 
       {/* Log Feed */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-        {filteredLogs.map(log => (
+        {filteredLogs.length === 0 ? (
+          <div style={{ padding: '36px', textAlign: 'center', backgroundColor: 'var(--gray-50)', borderRadius: 'var(--radius-lg)', color: 'var(--gray-500)', fontSize: '0.9375rem' }}>
+            📜 Belum ada riwayat konsumsi atau audit log dapur yang tercatat.
+          </div>
+        ) : (
+          filteredLogs.map(log => (
           <div
             key={log.id}
             className="sp-card"
@@ -238,7 +251,7 @@ const StockPantryHistoryPage = () => {
               </button>
             )}
           </div>
-        ))}
+        )))}
       </div>
     </div>
   );

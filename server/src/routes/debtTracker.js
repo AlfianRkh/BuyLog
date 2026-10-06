@@ -21,6 +21,7 @@ router.delete('/debts/:id', debtTrackerController.deleteDebt);
 
 // Reports & Settings
 router.get('/reports/monthly', debtTrackerController.getMonthlyReport);
+router.get('/settings', debtTrackerController.getSettings);
 router.put('/settings', debtTrackerController.updateSettings);
 
 module.exports = router;

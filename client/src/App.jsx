@@ -54,6 +54,17 @@ import StockPantryShoppingListPage from './pages/stockPantry/StockPantryShopping
 import StockPantryHistoryPage from './pages/stockPantry/StockPantryHistoryPage';
 import StockPantryZonesPage from './pages/stockPantry/StockPantryZonesPage';
 
+// Context & Pages - SmartFin Engine
+import { SmartFinProvider } from './contexts/SmartFinContext';
+import SmartFinDashboardPage from './pages/smartFin/SmartFinDashboardPage';
+import SmartFinScanPage from './pages/smartFin/SmartFinScanPage';
+import SmartFinTransactionsPage from './pages/smartFin/SmartFinTransactionsPage';
+import SmartFinSplitBillPage from './pages/smartFin/SmartFinSplitBillPage';
+import SmartFinAccountsPage from './pages/smartFin/SmartFinAccountsPage';
+import SmartFinBudgetsPage from './pages/smartFin/SmartFinBudgetsPage';
+import SmartFinReportsPage from './pages/smartFin/SmartFinReportsPage';
+import SmartFinSettingsPage from './pages/smartFin/SmartFinSettingsPage';
+
 // Styles
 import './styles/variables.css';
 import './styles/global.css';
@@ -102,88 +113,101 @@ function App() {
       <AuthProvider>
         <WishBoardProvider>
           <StockPantryProvider>
-            <ToastProvider>
-              <Routes>
-                {/* Public Auth Routes */}
-                <Route
-                  path="/login"
-                  element={
-                    <PublicRoute>
-                      <LoginPage />
-                    </PublicRoute>
-                  }
-                />
-                <Route
-                  path="/register"
-                  element={
-                    <PublicRoute>
-                      <RegisterPage />
-                    </PublicRoute>
-                  }
-                />
+            <SmartFinProvider>
+              <ToastProvider>
+                <Routes>
+                  {/* Public Auth Routes */}
+                  <Route
+                    path="/login"
+                    element={
+                      <PublicRoute>
+                        <LoginPage />
+                      </PublicRoute>
+                    }
+                  />
+                  <Route
+                    path="/register"
+                    element={
+                      <PublicRoute>
+                        <RegisterPage />
+                      </PublicRoute>
+                    }
+                  />
 
-                {/* Protected App Routes */}
-                <Route
-                  path="/"
-                  element={
-                    <ProtectedRoute>
-                      <AppLayout />
-                    </ProtectedRoute>
-                  }
-                >
-                  <Route index element={<Navigate to="/dashboard" replace />} />
-                  <Route path="dashboard" element={<DashboardPage />} />
-                  <Route path="pembelian" element={<PembelianListPage />} />
-                  <Route path="pembelian/tambah" element={<PembelianCreatePage />} />
-                  <Route path="pembelian/:id" element={<PembelianDetailPage />} />
-                  <Route path="barang" element={<BarangListPage />} />
-                  <Route path="barang/:id" element={<BarangDetailPage />} />
-                  <Route path="merk" element={<MerkPage />} />
-                  <Route path="toko" element={<TokoPage />} />
-                  <Route path="lokasi" element={<LokasiPage />} />
-                  <Route path="laporan" element={<LaporanPage />} />
-                  <Route path="pengaturan" element={<PengaturanPage />} />
+                  {/* Protected App Routes */}
+                  <Route
+                    path="/"
+                    element={
+                      <ProtectedRoute>
+                        <AppLayout />
+                      </ProtectedRoute>
+                    }
+                  >
+                    <Route index element={<Navigate to="/dashboard" replace />} />
+                    <Route path="dashboard" element={<DashboardPage />} />
+                    <Route path="pembelian" element={<PembelianListPage />} />
+                    <Route path="pembelian/tambah" element={<PembelianCreatePage />} />
+                    <Route path="pembelian/:id" element={<PembelianDetailPage />} />
+                    <Route path="barang" element={<BarangListPage />} />
+                    <Route path="barang/:id" element={<BarangDetailPage />} />
+                    <Route path="merk" element={<MerkPage />} />
+                    <Route path="toko" element={<TokoPage />} />
+                    <Route path="lokasi" element={<LokasiPage />} />
+                    <Route path="laporan" element={<LaporanPage />} />
+                    <Route path="pengaturan" element={<PengaturanPage />} />
 
-                  {/* DebtTracker Submenu Routes */}
-                  <Route path="hutang-piutang" element={<Navigate to="/hutang-piutang/dashboard" replace />} />
-                  <Route path="hutang-piutang/dashboard" element={<HutangPiutangDashboardPage />} />
-                  <Route path="hutang-piutang/catatan" element={<HutangPiutangLedgerPage />} />
-                  <Route path="hutang-piutang/detail" element={<HutangPiutangDetailPage />} />
-                  <Route path="hutang-piutang/kontak" element={<HutangPiutangKontakPage />} />
-                  <Route path="hutang-piutang/laporan" element={<HutangPiutangLaporanPage />} />
-                  <Route path="hutang-piutang/pengaturan" element={<HutangPiutangPengaturanPage />} />
+                    {/* DebtTracker Submenu Routes */}
+                    <Route path="hutang-piutang" element={<Navigate to="/hutang-piutang/dashboard" replace />} />
+                    <Route path="hutang-piutang/dashboard" element={<HutangPiutangDashboardPage />} />
+                    <Route path="hutang-piutang/catatan" element={<HutangPiutangLedgerPage />} />
+                    <Route path="hutang-piutang/detail" element={<HutangPiutangDetailPage />} />
+                    <Route path="hutang-piutang/kontak" element={<HutangPiutangKontakPage />} />
+                    <Route path="hutang-piutang/laporan" element={<HutangPiutangLaporanPage />} />
+                    <Route path="hutang-piutang/pengaturan" element={<HutangPiutangPengaturanPage />} />
 
-                  {/* PriceRadar Submenu Routes */}
-                  <Route path="priceradar" element={<Navigate to="/priceradar/dashboard" replace />} />
-                  <Route path="priceradar/dashboard" element={<PriceRadarDashboardPage />} />
-                  <Route path="priceradar/watchlist" element={<PriceRadarWatchlistPage />} />
-                  <Route path="priceradar/produk/:slug" element={<PriceRadarProductDetailPage />} />
-                  <Route path="priceradar/sumber-harga" element={<PriceRadarSourcesPage />} />
-                  <Route path="priceradar/statistik" element={<PriceRadarStatsPage />} />
+                    {/* PriceRadar Submenu Routes */}
+                    <Route path="priceradar" element={<Navigate to="/priceradar/dashboard" replace />} />
+                    <Route path="priceradar/dashboard" element={<PriceRadarDashboardPage />} />
+                    <Route path="priceradar/watchlist" element={<PriceRadarWatchlistPage />} />
+                    <Route path="priceradar/produk/:slug" element={<PriceRadarProductDetailPage />} />
+                    <Route path="priceradar/sumber-harga" element={<PriceRadarSourcesPage />} />
+                    <Route path="priceradar/statistik" element={<PriceRadarStatsPage />} />
 
-                  {/* WishBoard Engine Submenu Routes */}
-                  <Route path="wishboard" element={<Navigate to="/wishboard/dashboard" replace />} />
-                  <Route path="wishboard/dashboard" element={<WishBoardDashboardPage />} />
-                  <Route path="wishboard/board" element={<WishBoardKanbanPage />} />
-                  <Route path="wishboard/matrix" element={<WishBoardMatrixPage />} />
-                  <Route path="wishboard/list" element={<WishBoardListPage />} />
-                  <Route path="wishboard/detail" element={<WishBoardDetailPage />} />
-                  <Route path="wishboard/settings" element={<WishBoardSettingsPage />} />
+                    {/* WishBoard Engine Submenu Routes */}
+                    <Route path="wishboard" element={<Navigate to="/wishboard/dashboard" replace />} />
+                    <Route path="wishboard/dashboard" element={<WishBoardDashboardPage />} />
+                    <Route path="wishboard/board" element={<WishBoardKanbanPage />} />
+                    <Route path="wishboard/matrix" element={<WishBoardMatrixPage />} />
+                    <Route path="wishboard/list" element={<WishBoardListPage />} />
+                    <Route path="wishboard/detail" element={<WishBoardDetailPage />} />
+                    <Route path="wishboard/settings" element={<WishBoardSettingsPage />} />
 
-                  {/* StockPantry Submenu Routes */}
-                  <Route path="stockpantry" element={<Navigate to="/stockpantry/dashboard" replace />} />
-                  <Route path="stockpantry/dashboard" element={<StockPantryDashboardPage />} />
-                  <Route path="stockpantry/inventaris" element={<StockPantryInventoryPage />} />
-                  <Route path="stockpantry/expiry" element={<StockPantryExpiryPage />} />
-                  <Route path="stockpantry/shopping-list" element={<StockPantryShoppingListPage />} />
-                  <Route path="stockpantry/history" element={<StockPantryHistoryPage />} />
-                  <Route path="stockpantry/zones" element={<StockPantryZonesPage />} />
-                </Route>
+                    {/* StockPantry Submenu Routes */}
+                    <Route path="stockpantry" element={<Navigate to="/stockpantry/dashboard" replace />} />
+                    <Route path="stockpantry/dashboard" element={<StockPantryDashboardPage />} />
+                    <Route path="stockpantry/inventaris" element={<StockPantryInventoryPage />} />
+                    <Route path="stockpantry/expiry" element={<StockPantryExpiryPage />} />
+                    <Route path="stockpantry/shopping-list" element={<StockPantryShoppingListPage />} />
+                    <Route path="stockpantry/history" element={<StockPantryHistoryPage />} />
+                    <Route path="stockpantry/zones" element={<StockPantryZonesPage />} />
 
-                {/* Fallback */}
-                <Route path="*" element={<Navigate to="/dashboard" replace />} />
-              </Routes>
-            </ToastProvider>
+                    {/* SmartFin Submenu Routes */}
+                    <Route path="smartfin" element={<Navigate to="/smartfin/dashboard" replace />} />
+                    <Route path="smartfin/dashboard" element={<SmartFinDashboardPage />} />
+                    <Route path="smartfin/scan" element={<SmartFinScanPage />} />
+                    <Route path="smartfin/transactions" element={<SmartFinTransactionsPage />} />
+                    <Route path="smartfin/split-bill" element={<SmartFinSplitBillPage />} />
+                    <Route path="smartfin/accounts" element={<SmartFinAccountsPage />} />
+                    <Route path="smartfin/budgets" element={<SmartFinBudgetsPage />} />
+                    <Route path="smartfin/reports" element={<SmartFinReportsPage />} />
+                    <Route path="smartfin/settings" element={<SmartFinSettingsPage />} />
+                  </Route>
+
+                  {/* Fallback */}
+                  <Route path="*" element={<Navigate to="/dashboard" replace />} />
+                </Routes>
+              </ToastProvider>
+            </SmartFinProvider>
           </StockPantryProvider>
         </WishBoardProvider>
       </AuthProvider>

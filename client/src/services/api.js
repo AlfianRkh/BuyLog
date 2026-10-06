@@ -85,6 +85,7 @@ export const api = {
     deleteDebt: (id) => api.delete(`/debt-tracker/debts/${id}`),
     getMonthlyReport: () => api.get('/debt-tracker/reports/monthly'),
     getDebtMonthlyReport: () => api.get('/debt-tracker/reports/monthly'),
+    getSettings: () => api.get('/debt-tracker/settings'),
     updateSettings: (data) => api.put('/debt-tracker/settings', data)
   },
 
@@ -100,7 +101,66 @@ export const api = {
     getSources: (params = {}) => api.get('/priceradar/sources', params),
     createSource: (data) => api.post('/priceradar/sources', data),
     getStats: (params = {}) => api.get('/priceradar/stats', params)
+  },
+
+  // SmartFin API Methods
+  smartFin: {
+    getSplitBill: () => api.get('/smartfin/split-bill'),
+    toggleMemberPaid: (memberId) => api.put(`/smartfin/split-bill/members/${memberId}/toggle-paid`),
+    addMember: (data) => api.post('/smartfin/split-bill/members', data),
+    getAccounts: () => api.get('/smartfin/accounts'),
+    getMutations: (accountId) => api.get(`/smartfin/accounts/${accountId}/mutations`),
+    createAccount: (data) => api.post('/smartfin/accounts', data),
+    transferAccounts: (data) => api.post('/smartfin/accounts/transfer', data),
+    deleteAccount: (id) => api.delete(`/smartfin/accounts/${id}`),
+    getBudgets: () => api.get('/smartfin/budgets'),
+    createBudget: (data) => api.post('/smartfin/budgets', data),
+    applyRule503020: (salary) => api.post('/smartfin/budgets/apply-503020', { salary }),
+    deleteBudget: (id) => api.delete(`/smartfin/budgets/${id}`),
+    getDashboard: () => api.get('/smartfin/dashboard'),
+    scanReceipt: (data) => api.post('/smartfin/scan-receipt', data),
+    getTransactions: (params = {}) => api.get('/smartfin/transactions', params),
+    createTransaction: (data) => api.post('/smartfin/transactions', data),
+    deleteTransaction: (id) => api.delete(`/smartfin/transactions/${id}`),
+    getReports: () => api.get('/smartfin/reports'),
+    getSettings: () => api.get('/smartfin/settings'),
+    updateSettings: (data) => api.put('/smartfin/settings', data),
+    getCategories: () => api.get('/smartfin/categories'),
+    createCategory: (data) => api.post('/smartfin/categories', data),
+    deleteCategory: (id) => api.delete(`/smartfin/categories/${id}`)
+  },
+
+  // WishBoard API Methods
+  wishboard: {
+    getDashboard: () => api.get('/wishboard/dashboard'),
+    getItems: () => api.get('/wishboard/items'),
+    createItem: (data) => api.post('/wishboard/items', data),
+    updateItemStatus: (id, status) => api.put(`/wishboard/items/${id}/status`, { status }),
+    addDeposit: (id, amount, note) => api.post(`/wishboard/items/${id}/deposit`, { amount, note }),
+    addPro: (id, text) => api.post(`/wishboard/items/${id}/pros`, { text }),
+    addCon: (id, text) => api.post(`/wishboard/items/${id}/cons`, { text }),
+    skipItem: (id, reason) => api.post(`/wishboard/items/${id}/skip`, { reason }),
+    deleteItem: (id) => api.delete(`/wishboard/items/${id}`),
+    getSettings: () => api.get('/wishboard/settings'),
+    updateSettings: (data) => api.put('/wishboard/settings', data)
+  },
+
+  // StockPantry API Methods
+  stockPantry: {
+    getDashboard: () => api.get('/stockpantry/dashboard'),
+    getItems: () => api.get('/stockpantry/items'),
+    createItem: (data) => api.post('/stockpantry/items', data),
+    updateItem: (id, data) => api.put(`/stockpantry/items/${id}`, data),
+    deleteItem: (id) => api.delete(`/stockpantry/items/${id}`),
+    consumeItem: (id, qtyUsed, note) => api.post(`/stockpantry/items/${id}/consume`, { qtyUsed, note }),
+    addShoppingItem: (data) => api.post('/stockpantry/shopping', data),
+    toggleShoppingCheck: (id) => api.put(`/stockpantry/shopping/${id}/toggle`),
+    commitRestock: () => api.post('/stockpantry/shopping/commit-restock'),
+    createZone: (data) => api.post('/stockpantry/zones', data)
   }
 };
 
 export default api;
+
+
+

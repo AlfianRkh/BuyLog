@@ -529,6 +529,11 @@ async function generateWASummary(userId, contactId) {
   };
 }
 
+async function getUserSettings(userId) {
+  const res = await db.query('SELECT id, name, email, avatar, wa_summary_template, reminder_days_before, default_payment_method, bank_account_info FROM users WHERE id = $1', [userId]);
+  return res.rows[0];
+}
+
 async function updateUserSettings(userId, data) {
   const { name, wa_summary_template, reminder_days_before, bank_account_info } = data;
 
@@ -558,6 +563,7 @@ module.exports = {
   deleteDebt,
   getMonthlyReport,
   generateWASummary,
+  getUserSettings,
   updateUserSettings,
   recalculateContactTotals,
   logActivity

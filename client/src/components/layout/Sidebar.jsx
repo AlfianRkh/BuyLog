@@ -26,7 +26,10 @@ import {
   Sliders,
   Refrigerator,
   Clock,
-  History
+  History,
+  Camera,
+  Receipt,
+  PiggyBank
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import './Sidebar.css';
@@ -74,6 +77,17 @@ const stockpantrySubmenuItems = [
   { path: '/stockpantry/zones', label: 'Zona Penyimpanan', icon: MapPin }
 ];
 
+const smartFinSubmenuItems = [
+  { path: '/smartfin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { path: '/smartfin/scan', label: 'Pindai Struk AI', icon: Camera },
+  { path: '/smartfin/transactions', label: 'Buku Transaksi', icon: Receipt },
+  { path: '/smartfin/split-bill', label: 'Smart Split-Bill', icon: PieChart },
+  { path: '/smartfin/accounts', label: 'Dompet & Rekening', icon: Wallet },
+  { path: '/smartfin/budgets', label: 'Pos Anggaran', icon: PiggyBank },
+  { path: '/smartfin/reports', label: 'Laporan Analisis', icon: BarChart3 },
+  { path: '/smartfin/settings', label: 'Pengaturan OCR', icon: Settings }
+];
+
 const Sidebar = ({ isOpen, onClose }) => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
@@ -83,17 +97,20 @@ const Sidebar = ({ isOpen, onClose }) => {
   const isPriceRadarActive = location.pathname.startsWith('/priceradar');
   const isWishBoardActive = location.pathname.startsWith('/wishboard');
   const isStockPantryActive = location.pathname.startsWith('/stockpantry');
+  const isSmartFinActive = location.pathname.startsWith('/smartfin');
 
   const [isDebtOpen, setIsDebtOpen] = useState(isDebtTrackerActive);
   const [isPriceRadarOpen, setIsPriceRadarOpen] = useState(isPriceRadarActive);
   const [isWishBoardOpen, setIsWishBoardOpen] = useState(isWishBoardActive);
   const [isStockPantryOpen, setIsStockPantryOpen] = useState(isStockPantryActive);
+  const [isSmartFinOpen, setIsSmartFinOpen] = useState(isSmartFinActive);
 
   useEffect(() => {
     if (isDebtTrackerActive) setIsDebtOpen(true);
     if (isPriceRadarActive) setIsPriceRadarOpen(true);
     if (isWishBoardActive) setIsWishBoardOpen(true);
     if (isStockPantryActive) setIsStockPantryOpen(true);
+    if (isSmartFinActive) setIsSmartFinOpen(true);
   }, [location.pathname]);
 
   const handleLogout = () => {
@@ -254,6 +271,41 @@ const Sidebar = ({ isOpen, onClose }) => {
             {isStockPantryOpen && (
               <div className="nav-submenu">
                 {stockpantrySubmenuItems.map((subItem) => {
+                  const SubIcon = subItem.icon;
+                  return (
+                    <NavLink
+                      key={subItem.path}
+                      to={subItem.path}
+                      onClick={onClose}
+                      className={({ isActive }) => `nav-subitem ${isActive ? 'active' : ''}`}
+                    >
+                      <SubIcon size={16} />
+                      <span>{subItem.label}</span>
+                    </NavLink>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Section Divider & Submenu Group for SmartFin */}
+          <div className="nav-section-title">SmartFin AI Vision</div>
+
+          <div className="nav-group">
+            <button
+              onClick={() => setIsSmartFinOpen(!isSmartFinOpen)}
+              className={`nav-group-header ${isSmartFinActive ? 'active-group' : ''}`}
+            >
+              <div className="nav-group-content">
+                <Receipt size={20} className="nav-icon text-[#4edea3]" />
+                <span className="text-[#4edea3] font-bold">SmartFin</span>
+              </div>
+              <ChevronRight size={16} className={`chevron-icon ${isSmartFinOpen ? 'open' : ''}`} />
+            </button>
+
+            {isSmartFinOpen && (
+              <div className="nav-submenu">
+                {smartFinSubmenuItems.map((subItem) => {
                   const SubIcon = subItem.icon;
                   return (
                     <NavLink

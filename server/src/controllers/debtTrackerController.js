@@ -103,6 +103,15 @@ exports.getMonthlyReport = async (req, res, next) => {
   }
 };
 
+exports.getSettings = async (req, res, next) => {
+  try {
+    const user = await debtTrackerService.getUserSettings(req.user.id);
+    res.json({ user });
+  } catch (error) {
+    next(error);
+  }
+};
+
 exports.updateSettings = async (req, res, next) => {
   try {
     const user = await debtTrackerService.updateUserSettings(req.user.id, req.body);

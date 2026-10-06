@@ -180,83 +180,97 @@ export default function WishBoardListPage() {
               </tr>
             </thead>
             <tbody>
-              {filteredItems.map((item) => (
-                <tr key={item.id}>
-                  <td style={{ textAlign: 'center' }}>
-                    <input
-                      checked={selectedRows.includes(item.id)}
-                      onChange={() => toggleRow(item.id)}
-                      style={{ cursor: 'pointer' }}
-                      type="checkbox"
-                    />
-                  </td>
-                  <td>
-                    <Link to="/wishboard/detail" style={{ textDecoration: 'none', color: 'inherit', display: 'flex', alignItems: 'center', gap: '12px' }}>
-                      <img src={item.img} alt={item.name} style={{ width: '40px', height: '40px', borderRadius: '8px', objectFit: 'cover', border: '1px solid var(--gray-200)', flexShrink: 0 }} />
-                      <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-                        <span style={{ fontWeight: 700, color: 'var(--gray-900)' }}>{item.name}</span>
-                        <span style={{ fontSize: '0.75rem', color: 'var(--gray-500)' }}>Brand: {item.brand}</span>
-                      </div>
-                    </Link>
-                  </td>
-                  <td>
-                    <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--primary-600)', backgroundColor: 'var(--primary-50)', padding: '2px 8px', borderRadius: '4px' }}>{item.category}</span>
-                  </td>
-                  <td style={{ fontWeight: 700, color: 'var(--gray-900)' }}>
-                    {formatRupiah(item.price)}
-                  </td>
-                  <td>
-                    <span style={{ fontWeight: 800 }}>{item.score}</span>
-                    <span className={item.score >= 80 ? 'wb-tag-urgent' : 'wb-tag-high'} style={{ marginLeft: '6px' }}>{item.scoreBadge}</span>
-                  </td>
-                  <td>
-                    <span style={{ color: 'var(--success-600)', fontWeight: 700 }}>{item.decisionRatio}%</span>
-                    <span style={{ fontSize: '0.75rem', color: 'var(--gray-500)', display: 'block' }}>{item.pros ? item.pros.length : 0} Pros / {item.cons ? item.cons.length : 0} Cons</span>
-                  </td>
-                  <td>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                      <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--success-600)' }}>{item.readiness}% ({formatRupiah(item.saved)})</span>
-                      <div className="wb-progress-bar"><div className="wb-progress-fill" style={{ width: `${item.readiness}%` }}></div></div>
-                    </div>
-                  </td>
-                  <td>
-                    <span className={item.status === 'ready' ? 'wb-tag-ready' : item.status === 'saving' ? 'wb-tag-saving' : 'wb-tag-want'}>
-                      {item.status.toUpperCase()}
-                    </span>
-                  </td>
-                  <td style={{ textAlign: 'right' }}>
-                    <Link to="/wishboard/detail" className="wb-btn-secondary" style={{ padding: '6px 12px', fontSize: '0.8rem' }}>
-                      Detail
-                    </Link>
+              {filteredItems.length === 0 ? (
+                <tr>
+                  <td colSpan={9} style={{ textAlign: 'center', padding: '40px', color: 'var(--gray-500)', fontSize: '0.9rem' }}>
+                    🎯 Belum ada item wishlist terdaftar. Klik "+ Tambah Item" untuk mendaftarkan barang impian Anda.
                   </td>
                 </tr>
-              ))}
+              ) : (
+                filteredItems.map((item) => (
+                  <tr key={item.id}>
+                    <td style={{ textAlign: 'center' }}>
+                      <input
+                        checked={selectedRows.includes(item.id)}
+                        onChange={() => toggleRow(item.id)}
+                        style={{ cursor: 'pointer' }}
+                        type="checkbox"
+                      />
+                    </td>
+                    <td>
+                      <Link to="/wishboard/detail" style={{ textDecoration: 'none', color: 'inherit', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <img src={item.img} alt={item.name} style={{ width: '40px', height: '40px', borderRadius: '8px', objectFit: 'cover', border: '1px solid var(--gray-200)', flexShrink: 0 }} />
+                        <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+                          <span style={{ fontWeight: 700, color: 'var(--gray-900)' }}>{item.name}</span>
+                          <span style={{ fontSize: '0.75rem', color: 'var(--gray-500)' }}>Brand: {item.brand}</span>
+                        </div>
+                      </Link>
+                    </td>
+                    <td>
+                      <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--primary-600)', backgroundColor: 'var(--primary-50)', padding: '2px 8px', borderRadius: '4px' }}>{item.category}</span>
+                    </td>
+                    <td style={{ fontWeight: 700, color: 'var(--gray-900)' }}>
+                      {formatRupiah(item.price)}
+                    </td>
+                    <td>
+                      <span style={{ fontWeight: 800 }}>{item.score}</span>
+                      <span className={item.score >= 80 ? 'wb-tag-urgent' : 'wb-tag-high'} style={{ marginLeft: '6px' }}>{item.scoreBadge}</span>
+                    </td>
+                    <td>
+                      <span style={{ color: 'var(--success-600)', fontWeight: 700 }}>{item.decisionRatio}%</span>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--gray-500)', display: 'block' }}>{item.pros ? item.pros.length : 0} Pros / {item.cons ? item.cons.length : 0} Cons</span>
+                    </td>
+                    <td>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--success-600)' }}>{item.readiness}% ({formatRupiah(item.saved)})</span>
+                        <div className="wb-progress-bar"><div className="wb-progress-fill" style={{ width: `${item.readiness}%` }}></div></div>
+                      </div>
+                    </td>
+                    <td>
+                      <span className={item.status === 'ready' ? 'wb-tag-ready' : item.status === 'saving' ? 'wb-tag-saving' : 'wb-tag-want'}>
+                        {item.status.toUpperCase()}
+                      </span>
+                    </td>
+                    <td style={{ textAlign: 'right' }}>
+                      <Link to="/wishboard/detail" className="wb-btn-secondary" style={{ padding: '6px 12px', fontSize: '0.8rem' }}>
+                        Detail
+                      </Link>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
       ) : (
         /* Grid View */
         <div className="wb-grid-3">
-          {filteredItems.map(item => (
-            <div key={item.id} className="wb-card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: '14px' }}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                <div style={{ position: 'relative', width: '100%', height: '160px', borderRadius: 'var(--radius-md)', overflow: 'hidden' }}>
-                  <img src={item.img} alt={item.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  <span className={item.status === 'ready' ? 'wb-tag-ready' : 'wb-tag-saving'} style={{ position: 'absolute', top: '8px', left: '8px' }}>
-                    {item.status.toUpperCase()}
-                  </span>
-                  <span className="wb-tag-urgent" style={{ position: 'absolute', top: '8px', right: '8px' }}>
-                    {item.score} pt
-                  </span>
-                </div>
-                <h3 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 700, color: 'var(--gray-900)' }}>{item.name}</h3>
-                <span style={{ fontSize: '0.9rem', fontWeight: 800, color: 'var(--primary-600)' }}>{formatRupiah(item.price)} ({item.readiness}% Saved)</span>
-              </div>
-              <Link to="/wishboard/detail" className="wb-btn-secondary" style={{ width: '100%', justifyContent: 'center' }}>
-                Buka Detail
-              </Link>
+          {filteredItems.length === 0 ? (
+            <div style={{ gridColumn: '1 / -1', padding: '40px', textAlign: 'center', backgroundColor: 'var(--gray-50)', borderRadius: 'var(--radius-lg)', color: 'var(--gray-500)' }}>
+              🎯 Belum ada item wishlist terdaftar.
             </div>
-          ))}
+          ) : (
+            filteredItems.map(item => (
+              <div key={item.id} className="wb-card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: '14px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  <div style={{ position: 'relative', width: '100%', height: '160px', borderRadius: 'var(--radius-md)', overflow: 'hidden' }}>
+                    <img src={item.img} alt={item.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    <span className={item.status === 'ready' ? 'wb-tag-ready' : 'wb-tag-saving'} style={{ position: 'absolute', top: '8px', left: '8px' }}>
+                      {item.status.toUpperCase()}
+                    </span>
+                    <span className="wb-tag-urgent" style={{ position: 'absolute', top: '8px', right: '8px' }}>
+                      {item.score} pt
+                    </span>
+                  </div>
+                  <h3 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 700, color: 'var(--gray-900)' }}>{item.name}</h3>
+                  <span style={{ fontSize: '0.9rem', fontWeight: 800, color: 'var(--primary-600)' }}>{formatRupiah(item.price)} ({item.readiness}% Saved)</span>
+                </div>
+                <Link to="/wishboard/detail" className="wb-btn-secondary" style={{ width: '100%', justifyContent: 'center' }}>
+                  Buka Detail
+                </Link>
+              </div>
+            ))
+          )}
         </div>
       )}
 

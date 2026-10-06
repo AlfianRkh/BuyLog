@@ -28,38 +28,31 @@ export default function WishBoardDetailPage() {
   const navigate = useNavigate();
   const { items, addDeposit, addPro, addCon, updateItemStatus } = useWishBoard();
 
-  const activeItem = items[0] || {
-    id: '1',
-    name: 'Logitech MX Keys S Advanced Wireless Keyboard',
-    brand: 'Logitech',
-    category: 'Elektronik & Workspace',
-    img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCLzCWZWZ_aO9bZHGC1ggpm1UggzZAUn1EwFWtuCZ5IM5VP-lR4eQ0gWVDUhvjOemOKSOQdv3TePza-7RmBlf6cHCEJkmdbJUIfzDFanYVdjnS5Q1DwXaSBW4s3AzPjA6gYpJPAY-n1Fpk_i_QwpHK6csDZs1bvxgA2mNep9LugLJoZmAozsvIqWM0KfWKsZse7hFgKaazXFK-j-1NrEaz9vjxEbpcLHjfI3F2e1NMnzItz6k8S9kYERA',
-    price: 1500000,
-    saved: 1275000,
-    urgency: 5,
-    want: 5,
-    score: 92,
-    decisionRatio: 83,
-    readiness: 85,
-    deadline: '2026-10-20',
-    daysLeft: '17 hari lagi',
-    sku: 'LOGI-MXK-S-BLK',
-    guarantee: '1 TAHUN',
-    pros: [
-      'Keyboard scissor-switch paling nyaman dan ergonomis untuk mengetik ribuan baris kode harian.',
-      'Mendukung seamless switching 3 perangkat antara MacBook M4 kerja dan Windows PC personal.',
-      'Smart backlighting otomatis menyala saat tangan mendekat + sensor ambient light hemat daya.',
-      'Daya tahan baterai hingga 5 bulan dan rechargeable via USB-C cepat.',
-      'Tombol programmable via Logi Options+ untuk shortcut IDE VS Code.'
-    ],
-    cons: [
-      'Harga cukup premium (Rp 1.5jt) dibanding keyboard mechanical entry-level lokal.'
-    ]
-  };
+  const activeItem = items && items.length > 0 ? items[0] : null;
 
   const [toastMsg, setToastMsg] = useState(null);
   const [newProText, setNewProText] = useState('');
   const [newConText, setNewConText] = useState('');
+
+  if (!activeItem) {
+    return (
+      <div className="wb-container" style={{ textAlign: 'center', padding: '60px 20px' }}>
+        <div style={{ maxWidth: '420px', margin: '0 auto', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
+          <div style={{ width: '64px', height: '64px', borderRadius: '50%', backgroundColor: 'var(--primary-50)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Tag size={32} color="var(--primary-600)" />
+          </div>
+          <h2 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--gray-900)', margin: 0 }}>Belum Ada Item Wishlist</h2>
+          <p style={{ color: 'var(--gray-500)', fontSize: '0.875rem', margin: 0 }}>
+            Daftarkan impian atau barang target Anda untuk memulai analisis prioritas dan rasionalisasi budget.
+          </p>
+          <Link to="/wishboard" className="wb-btn-primary" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', marginTop: '8px' }}>
+            <PlusCircle size={18} />
+            <span>Kembali ke Dashboard Wishboard</span>
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   const triggerToast = (msg) => {
     setToastMsg(msg);
