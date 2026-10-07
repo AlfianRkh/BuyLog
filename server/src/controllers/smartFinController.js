@@ -1,4 +1,5 @@
 const SmartFinAccount = require('../models/SmartFinAccount');
+const SmartFinCategory = require('../models/SmartFinCategory');
 
 // In-memory / Backend Database Store for SmartFin Split-Bill & Mutations
 let splitBillData = {
@@ -675,14 +676,7 @@ exports.getReports = async (req, res, next) => {
   }
 };
 
-let masterCategoriesData = [
-  { id: 'cat-1', name: 'Kebutuhan Dapur & Sembako', icon: '🥫', type: 'Pengeluaran' },
-  { id: 'cat-2', name: 'Makanan, Kafe & Resto', icon: '☕', type: 'Pengeluaran' },
-  { id: 'cat-3', name: 'Transportasi & Bensin', icon: '🚗', type: 'Pengeluaran' },
-  { id: 'cat-4', name: 'Perlengkapan Rumah', icon: '🧼', type: 'Pengeluaran' },
-  { id: 'cat-5', name: 'Tagihan & Utilitas', icon: '⚡', type: 'Pengeluaran' },
-  { id: 'cat-6', name: 'Gaji & Pemasukan Tetap', icon: '💼', type: 'Pemasukan' }
-];
+// Categories now stored in PostgreSQL smartfin_categories table via SmartFinCategory model
 
 let userProfileData = {
   name: 'Alfian S.',
@@ -696,6 +690,7 @@ exports.getSettings = async (req, res, next) => {
   try {
     const userId = req.user ? req.user.id : 1;
     const accounts = await SmartFinAccount.getAccounts(userId);
+    const categories = await SmartFinCategory.getCategories(userId);
     const defaultAcc = accounts.find(a => a.isDefault) || accounts[0];
 
     res.json({
@@ -704,7 +699,7 @@ exports.getSettings = async (req, res, next) => {
         ...ocrSettingsData,
         autoDebitAccount: defaultAcc ? defaultAcc.name : 'BCA Utama'
       },
-      categories: masterCategoriesData,
+      categories,
       profile: userProfileData,
       accounts
     });
@@ -727,6 +722,7 @@ exports.updateSettings = async (req, res, next) => {
     if (profile) userProfileData = { ...userProfileData, ...profile };
 
     const accounts = await SmartFinAccount.getAccounts(userId);
+    const categories = await SmartFinCategory.getCategories(userId);
     const defaultAcc = accounts.find(a => a.isDefault) || accounts[0];
 
     res.json({
@@ -736,6 +732,7 @@ exports.updateSettings = async (req, res, next) => {
         ...ocrSettingsData,
         autoDebitAccount: defaultAcc ? defaultAcc.name : 'BCA Utama'
       },
+      categories,
       profile: userProfileData,
       accounts
     });
@@ -747,9 +744,11 @@ exports.updateSettings = async (req, res, next) => {
 // GET /api/smartfin/categories
 exports.getCategories = async (req, res, next) => {
   try {
+    const userId = req.user ? req.user.id : 1;
+    const categories = await SmartFinCategory.getCategories(userId);
     res.json({
       success: true,
-      categories: masterCategoriesData
+      categories
     });
   } catch (error) {
     next(error);
@@ -759,25 +758,20 @@ exports.getCategories = async (req, res, next) => {
 // POST /api/smartfin/categories
 exports.createCategory = async (req, res, next) => {
   try {
+    const userId = req.user ? req.user.id : 1;
     const { name, icon, type } = req.body;
     if (!name) {
       return res.status(400).json({ success: false, message: 'Nama kategori wajib diisi.' });
     }
 
-    const newCat = {
-      id: 'cat-' + Date.now(),
-      name: name.trim(),
-      icon: icon || '🏷️',
-      type: type || 'Pengeluaran'
-    };
-
-    masterCategoriesData.push(newCat);
+    const categories = await SmartFinCategory.createCategory({ name, icon, type, userId });
+    const created = categories.find(c => c.name.toLowerCase() === name.trim().toLowerCase()) || categories[categories.length - 1];
 
     res.status(201).json({
       success: true,
-      message: `Kategori "${name}" berhasil ditambahkan ke Backend Server!`,
-      category: newCat,
-      categories: masterCategoriesData
+      message: `Kategori "${name}" berhasil ditambahkan ke Database!`,
+      category: created,
+      categories
     });
   } catch (error) {
     next(error);
@@ -787,19 +781,14 @@ exports.createCategory = async (req, res, next) => {
 // DELETE /api/smartfin/categories/:id
 exports.deleteCategory = async (req, res, next) => {
   try {
+    const userId = req.user ? req.user.id : 1;
     const { id } = req.params;
-    const target = masterCategoriesData.find(c => c.id === id);
-
-    if (!target) {
-      return res.status(404).json({ success: false, message: 'Kategori tidak ditemukan.' });
-    }
-
-    masterCategoriesData = masterCategoriesData.filter(c => c.id !== id);
+    const categories = await SmartFinCategory.deleteCategory(id, userId);
 
     res.json({
       success: true,
-      message: `Kategori "${target.name}" berhasil dihapus dari Backend Server.`,
-      categories: masterCategoriesData
+      message: `Kategori berhasil dihapus dari Database.`,
+      categories
     });
   } catch (error) {
     next(error);

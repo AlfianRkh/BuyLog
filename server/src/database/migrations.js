@@ -260,6 +260,19 @@ Terima kasih banyak ya! Semoga lancar rezekinya.';
     );
 
     CREATE INDEX IF NOT EXISTS idx_smartfin_accounts_user ON smartfin_accounts(user_id, is_default);
+
+    -- SmartFin Master Categories Table
+    CREATE TABLE IF NOT EXISTS smartfin_categories (
+      id SERIAL PRIMARY KEY,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      name VARCHAR(150) NOT NULL,
+      icon VARCHAR(50) DEFAULT '🏷️',
+      type VARCHAR(50) DEFAULT 'Pengeluaran',
+      created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_smartfin_categories_user ON smartfin_categories(user_id);
   `);
 
   console.log('PostgreSQL database migrations completed successfully.');
