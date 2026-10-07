@@ -356,11 +356,22 @@ export default function SmartFinSettingsPage() {
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '10px' }}>
               {accounts.map(acc => {
-                const isSel = defaultAccount === acc.name || defaultAccount === acc.id;
+                const isSel = acc.isDefault || defaultAccount === acc.name || defaultAccount === acc.id;
                 return (
                   <div
                     key={acc.id}
-                    onClick={() => setDefaultAccount(acc.name)}
+                    onClick={async () => {
+                      setDefaultAccount(acc.name);
+                      try {
+                        const res = await api.smartFin.setDefaultAccount(acc.id);
+                        if (res && res.success) {
+                          triggerToast(`Rekening "${acc.name}" dijadikan Rekening Default (disimpan di DB)!`);
+                          fetchSettings();
+                        }
+                      } catch (err) {
+                        console.error('Failed setting default account:', err);
+                      }
+                    }}
                     style={{
                       padding: '12px',
                       borderRadius: 'var(--radius-md)',

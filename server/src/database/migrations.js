@@ -244,6 +244,22 @@ Terima kasih banyak ya! Semoga lancar rezekinya.';
 
     CREATE INDEX IF NOT EXISTS idx_priceradar_watchlist_user ON price_radar_watchlist(user_id, status);
     CREATE INDEX IF NOT EXISTS idx_priceradar_logs_user ON price_radar_logs(user_id);
+
+    -- SmartFin Accounts Table
+    CREATE TABLE IF NOT EXISTS smartfin_accounts (
+      id SERIAL PRIMARY KEY,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      name VARCHAR(150) NOT NULL,
+      type VARCHAR(50) DEFAULT 'Bank',
+      number VARCHAR(100),
+      balance NUMERIC(15, 2) DEFAULT 0,
+      color VARCHAR(20) DEFAULT '#3b82f6',
+      is_default BOOLEAN DEFAULT FALSE,
+      created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_smartfin_accounts_user ON smartfin_accounts(user_id, is_default);
   `);
 
   console.log('PostgreSQL database migrations completed successfully.');

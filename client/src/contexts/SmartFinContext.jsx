@@ -118,19 +118,36 @@ export const SmartFinProvider = ({ children }) => {
       if (res && res.success) {
         if (res.accounts) setAccounts(res.accounts);
         fetchSmartFinData();
-        triggerToast(`Rekening/Dompet "${newAcc.name}" berhasil dibuat di Backend!`);
+        triggerToast(`Rekening/Dompet "${newAcc.name}" berhasil dibuat di Database!`);
       }
     } catch (err) {
       console.error('Failed to add account:', err);
-      triggerToast('Gagal membuat rekening di BE.');
+      triggerToast('Gagal membuat rekening di DB.');
     }
   };
+
+  const setDefaultAccount = async (accountId) => {
+    try {
+      const res = await api.smartFin.setDefaultAccount(accountId);
+      if (res && res.success) {
+        if (res.accounts) setAccounts(res.accounts);
+        fetchSmartFinData();
+        triggerToast(res.message || 'Rekening default berhasil disimpan di Database!');
+      }
+    } catch (err) {
+      console.error('Failed to set default account:', err);
+      triggerToast('Gagal memperbarui rekening default di Database.');
+    }
+  };
+
+  const defaultAccount = accounts.find(a => a.isDefault) || accounts[0] || null;
 
   return (
     <SmartFinContext.Provider
       value={{
         accounts,
         walletAccounts: accounts,
+        defaultAccount,
         transactions,
         envelopes,
         summary,
@@ -144,6 +161,7 @@ export const SmartFinProvider = ({ children }) => {
         updateWalletBalance,
         transferAccounts,
         addAccount,
+        setDefaultAccount,
         triggerToast,
         showToast,
         toastMsg

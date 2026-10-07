@@ -112,6 +112,7 @@ export const api = {
     getMutations: (accountId) => api.get(`/smartfin/accounts/${accountId}/mutations`),
     createAccount: (data) => api.post('/smartfin/accounts', data),
     transferAccounts: (data) => api.post('/smartfin/accounts/transfer', data),
+    setDefaultAccount: (id) => api.put(`/smartfin/accounts/${id}/set-default`),
     deleteAccount: (id) => api.delete(`/smartfin/accounts/${id}`),
     getBudgets: () => api.get('/smartfin/budgets'),
     createBudget: (data) => api.post('/smartfin/budgets', data),

@@ -1,4 +1,6 @@
-// In-memory / Backend Database Store for SmartFin Split-Bill & Accounts
+const SmartFinAccount = require('../models/SmartFinAccount');
+
+// In-memory / Backend Database Store for SmartFin Split-Bill & Mutations
 let splitBillData = {
   id: 'sb-1',
   title: 'Kopi Kenangan & Kitchen - Galaxy Mall',
@@ -19,11 +21,7 @@ let splitBillData = {
   ]
 };
 
-let accountsData = [
-  { id: 'acc1', name: 'BCA Utama', type: 'Bank', number: '5410-8891-2291', balance: 12800000, color: '#3b82f6', isDefault: true },
-  { id: 'acc2', name: 'GoPay Premium', type: 'E-Wallet', number: '0812-8899-2341', balance: 950000, color: '#06b6d4', isDefault: false },
-  { id: 'acc3', name: 'Kas Tunai Dompet', type: 'Cash', number: 'Dompet Saku', balance: 500000, color: '#10b981', isDefault: false },
-];
+// AccountsData is now fully persisted in PostgreSQL smartfin_accounts table via SmartFinAccount model
 
 let mutationsData = {
   'acc1': [
@@ -108,16 +106,18 @@ exports.addMember = async (req, res, next) => {
 };
 
 // ---------------------------------------------------------
-// ACCOUNTS & WALLETS ENDPOINTS
+// ACCOUNTS & WALLETS ENDPOINTS (PostgreSQL DB)
 // ---------------------------------------------------------
 
 // GET /api/smartfin/accounts
 exports.getAccounts = async (req, res, next) => {
   try {
-    const totalLiquidity = accountsData.reduce((sum, a) => sum + (parseFloat(a.balance) || 0), 0);
+    const userId = req.user ? req.user.id : 1;
+    const accounts = await SmartFinAccount.getAccounts(userId);
+    const totalLiquidity = accounts.reduce((sum, a) => sum + (parseFloat(a.balance) || 0), 0);
     res.json({
       success: true,
-      accounts: accountsData,
+      accounts,
       totalLiquidity
     });
   } catch (error) {
@@ -128,30 +128,42 @@ exports.getAccounts = async (req, res, next) => {
 // POST /api/smartfin/accounts
 exports.createAccount = async (req, res, next) => {
   try {
-    const { name, type, number, balance, color } = req.body;
+    const userId = req.user ? req.user.id : 1;
+    const { name, type, number, balance, color, isDefault } = req.body;
 
     if (!name) {
       return res.status(400).json({ success: false, message: 'Nama rekening/dompet wajib diisi.' });
     }
 
-    const newAcc = {
-      id: 'acc_' + Date.now(),
-      name,
-      type: type || 'Bank',
-      number: number || 'Rekening Baru',
-      balance: Number(balance) || 0,
-      color: color || '#10b981',
-      isDefault: false
-    };
-
-    accountsData.push(newAcc);
-    const totalLiquidity = accountsData.reduce((sum, a) => sum + (parseFloat(a.balance) || 0), 0);
+    const accounts = await SmartFinAccount.createAccount({ name, type, number, balance, color, isDefault, userId });
+    const totalLiquidity = accounts.reduce((sum, a) => sum + (parseFloat(a.balance) || 0), 0);
+    const created = accounts.find(a => a.name.toLowerCase() === name.toLowerCase()) || accounts[0];
 
     res.status(201).json({
       success: true,
-      message: `Rekening "${name}" berhasil dibuat di Backend API server.`,
-      account: newAcc,
-      accounts: accountsData,
+      message: `Rekening "${name}" berhasil dibuat di Database!`,
+      account: created,
+      accounts,
+      totalLiquidity
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// PUT /api/smartfin/accounts/:id/set-default
+exports.setDefaultAccount = async (req, res, next) => {
+  try {
+    const userId = req.user ? req.user.id : 1;
+    const { id } = req.params;
+    const accounts = await SmartFinAccount.setDefaultAccount(id, userId);
+    const defaultAcc = accounts.find(a => a.isDefault);
+    const totalLiquidity = accounts.reduce((sum, a) => sum + (parseFloat(a.balance) || 0), 0);
+
+    res.json({
+      success: true,
+      message: `Rekening "${defaultAcc ? defaultAcc.name : 'Utama'}" berhasil dijadikan Rekening Default di Database!`,
+      accounts,
       totalLiquidity
     });
   } catch (error) {
@@ -162,62 +174,16 @@ exports.createAccount = async (req, res, next) => {
 // POST /api/smartfin/accounts/transfer
 exports.transferAccounts = async (req, res, next) => {
   try {
+    const userId = req.user ? req.user.id : 1;
     const { fromId, toId, amount } = req.body;
-    const numericAmount = parseFloat(amount) || 0;
 
-    if (numericAmount <= 0) {
-      return res.status(400).json({ success: false, message: 'Nominal transfer harus lebih dari 0.' });
-    }
-
-    const fromAcc = accountsData.find(a => a.id === fromId || a.name === fromId);
-    const toAcc = accountsData.find(a => a.id === toId || a.name === toId);
-
-    if (!fromAcc || !toAcc) {
-      return res.status(404).json({ success: false, message: 'Rekening asal atau tujuan tidak ditemukan.' });
-    }
-
-    if (fromAcc.balance < numericAmount) {
-      return res.status(400).json({ success: false, message: 'Saldo rekening asal tidak mencukupi.' });
-    }
-
-    fromAcc.balance -= numericAmount;
-    toAcc.balance += numericAmount;
-
-    // Record mutation logs in BE
-    const dateFormatted = new Date().toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) + ' · ' +
-                          new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WIB';
-
-    if (!mutationsData[fromAcc.id]) mutationsData[fromAcc.id] = [];
-    if (!mutationsData[toAcc.id]) mutationsData[toAcc.id] = [];
-
-    mutationsData[fromAcc.id].unshift({
-      id: 'MUT-' + Date.now().toString().slice(-4),
-      date: dateFormatted,
-      merchant: `Transfer ke ${toAcc.name}`,
-      category: '🔄 Transfer Antar Rekening',
-      amount: numericAmount,
-      type: 'expense',
-      method: 'Transfer',
-      invoice: 'TRF-' + Date.now().toString().slice(-6)
-    });
-
-    mutationsData[toAcc.id].unshift({
-      id: 'MUT-' + Date.now().toString().slice(-4),
-      date: dateFormatted,
-      merchant: `Transfer dari ${fromAcc.name}`,
-      category: '🔄 Transfer Antar Rekening',
-      amount: numericAmount,
-      type: 'income',
-      method: 'Transfer',
-      invoice: 'TRF-' + Date.now().toString().slice(-6)
-    });
-
-    const totalLiquidity = accountsData.reduce((sum, a) => sum + (parseFloat(a.balance) || 0), 0);
+    const result = await SmartFinAccount.transferAccounts({ fromId, toId, amount, userId });
+    const totalLiquidity = result.accounts.reduce((sum, a) => sum + (parseFloat(a.balance) || 0), 0);
 
     res.json({
       success: true,
-      message: `Transfer Rp ${numericAmount.toLocaleString('id-ID')} dari ${fromAcc.name} ke ${toAcc.name} berhasil dieksekusi di Backend API.`,
-      accounts: accountsData,
+      message: `Transfer Rp ${Number(result.amount).toLocaleString('id-ID')} dari ${result.fromAcc.name} ke ${result.toAcc.name} berhasil dieksekusi di Database!`,
+      accounts: result.accounts,
       totalLiquidity
     });
   } catch (error) {
@@ -228,22 +194,15 @@ exports.transferAccounts = async (req, res, next) => {
 // DELETE /api/smartfin/accounts/:id
 exports.deleteAccount = async (req, res, next) => {
   try {
+    const userId = req.user ? req.user.id : 1;
     const { id } = req.params;
-    const targetAcc = accountsData.find(a => a.id === id);
-
-    if (!targetAcc) {
-      return res.status(404).json({ success: false, message: 'Rekening tidak ditemukan.' });
-    }
-
-    accountsData = accountsData.filter(a => a.id !== id);
-    delete mutationsData[id];
-
-    const totalLiquidity = accountsData.reduce((sum, a) => sum + (parseFloat(a.balance) || 0), 0);
+    const result = await SmartFinAccount.deleteAccount(id, userId);
+    const totalLiquidity = result.accounts.reduce((sum, a) => sum + (parseFloat(a.balance) || 0), 0);
 
     res.json({
       success: true,
-      message: `Rekening "${targetAcc.name}" berhasil dihapus dari Backend server.`,
-      accounts: accountsData,
+      message: `Rekening "${result.targetAcc.name}" berhasil dihapus dari Database!`,
+      accounts: result.accounts,
       totalLiquidity
     });
   } catch (error) {
@@ -254,8 +213,10 @@ exports.deleteAccount = async (req, res, next) => {
 // GET /api/smartfin/accounts/:id/mutations
 exports.getAccountMutations = async (req, res, next) => {
   try {
+    const userId = req.user ? req.user.id : 1;
     const { id } = req.params;
-    const account = accountsData.find(a => a.id === id || a.name.toLowerCase() === id.toLowerCase());
+    const accounts = await SmartFinAccount.getAccounts(userId);
+    const account = accounts.find(a => a.id === id.toString() || a.name.toLowerCase() === id.toString().toLowerCase());
 
     const mutations = mutationsData[id] || (account && mutationsData[account.id]) || [
       { id: 'MUT-DEF-1', date: '06 Okt 2026 · 10:00 WIB', merchant: 'Transaksi Pembukaan Rekening', category: '💼 Saldo Awal', amount: account ? account.balance : 1000000, type: 'income', method: 'Deposit', invoice: 'INIT-001' }
@@ -450,7 +411,9 @@ let ocrSettingsData = {
 // GET /api/smartfin/dashboard
 exports.getDashboard = async (req, res, next) => {
   try {
-    const totalBalance = accountsData.reduce((sum, a) => sum + (parseFloat(a.balance) || 0), 0);
+    const userId = req.user ? req.user.id : 1;
+    const accounts = await SmartFinAccount.getAccounts(userId);
+    const totalBalance = accounts.reduce((sum, a) => sum + (parseFloat(a.balance) || 0), 0);
     const monthExpenses = transactionsData.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
     const monthIncome = transactionsData.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
 
@@ -495,7 +458,7 @@ exports.getDashboard = async (req, res, next) => {
         totalSpentEnvelopes,
         envelopeBurnRatePct: totalPlafon > 0 ? Number(((totalSpentEnvelopes / totalPlafon) * 100).toFixed(1)) : 0
       },
-      accounts: accountsData,
+      accounts,
       envelopes: budgetsData,
       categoryBreakdown,
       insights,
@@ -510,12 +473,15 @@ exports.getDashboard = async (req, res, next) => {
 // POST /api/smartfin/scan-receipt
 exports.scanReceipt = async (req, res, next) => {
   try {
+    const userId = req.user ? req.user.id : 1;
     const { merchant, date, amount, items, category, paymentAccount, receiptNo } = req.body;
+
+    const defaultAcc = await SmartFinAccount.getDefaultAccount(userId);
+    const targetAccountName = paymentAccount || (defaultAcc ? defaultAcc.name : 'BCA Utama');
 
     const parsedMerchant = merchant || 'Indomaret / Alfamart Superstore';
     const parsedAmount = Number(amount) || 48500;
     const parsedCategory = category || '🥫 Kebutuhan Dapur';
-    const targetAccountName = paymentAccount || 'BCA Utama';
 
     const newTxId = 'TX-' + Date.now().toString().slice(-4);
     const dateFormatted = date || new Date().toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
@@ -539,23 +505,8 @@ exports.scanReceipt = async (req, res, next) => {
     // Add to transactions list
     transactionsData.unshift(newTx);
 
-    // Update account balance
-    const targetAcc = accountsData.find(a => a.name.toLowerCase() === targetAccountName.toLowerCase() || a.id === targetAccountName) || accountsData[0];
-    if (targetAcc) {
-      targetAcc.balance = Math.max(0, targetAcc.balance - parsedAmount);
-
-      if (!mutationsData[targetAcc.id]) mutationsData[targetAcc.id] = [];
-      mutationsData[targetAcc.id].unshift({
-        id: 'MUT-' + Date.now().toString().slice(-4),
-        date: `${dateFormatted} · ${timeFormatted}`,
-        merchant: parsedMerchant,
-        category: parsedCategory,
-        amount: parsedAmount,
-        type: 'expense',
-        method: targetAcc.type,
-        invoice: newTx.receiptNo
-      });
-    }
+    // Update account balance in DB
+    await SmartFinAccount.updateBalance(targetAccountName, -parsedAmount, userId);
 
     // Deduct envelope budget
     const targetEnv = budgetsData.find(b => b.name.toLowerCase().includes(parsedCategory.toLowerCase()) || parsedCategory.toLowerCase().includes(b.category.toLowerCase()));
@@ -565,7 +516,7 @@ exports.scanReceipt = async (req, res, next) => {
 
     res.status(201).json({
       success: true,
-      message: `Struk "${parsedMerchant}" sebesar Rp ${parsedAmount.toLocaleString('id-ID')} berhasil dipindai OCR dan dicatat di Backend!`,
+      message: `Struk "${parsedMerchant}" sebesar Rp ${parsedAmount.toLocaleString('id-ID')} berhasil dipindai OCR dan dicatat di Database!`,
       transaction: newTx,
       scannedItems: items || [
         { name: 'Minyak Goreng Tropical 2L', qty: 1, price: 34500 },
@@ -646,31 +597,14 @@ exports.createTransaction = async (req, res, next) => {
 
     transactionsData.unshift(newTx);
 
-    // Update account balance
-    const targetAcc = accountsData.find(a => a.name.toLowerCase() === txAccount.toLowerCase() || a.id === txAccount) || accountsData[0];
-    if (targetAcc) {
-      if (txType === 'expense') {
-        targetAcc.balance = Math.max(0, targetAcc.balance - numAmount);
-      } else {
-        targetAcc.balance += numAmount;
-      }
-
-      if (!mutationsData[targetAcc.id]) mutationsData[targetAcc.id] = [];
-      mutationsData[targetAcc.id].unshift({
-        id: 'MUT-' + Date.now().toString().slice(-4),
-        date: `${newTx.date} · ${newTx.time}`,
-        merchant,
-        category: txCategory,
-        amount: numAmount,
-        type: txType,
-        method: targetAcc.type,
-        invoice: newTx.receiptNo
-      });
-    }
+    // Update account balance in DB
+    const userId = req.user ? req.user.id : 1;
+    const delta = txType === 'income' ? numAmount : -numAmount;
+    await SmartFinAccount.updateBalance(txAccount, delta, userId);
 
     res.status(201).json({
       success: true,
-      message: `Transaksi "${merchant}" berhasil dicatat di Backend API!`,
+      message: `Transaksi "${merchant}" berhasil dicatat di Database!`,
       transaction: newTx,
       transactions: transactionsData
     });
@@ -760,12 +694,19 @@ let userProfileData = {
 // GET /api/smartfin/settings
 exports.getSettings = async (req, res, next) => {
   try {
+    const userId = req.user ? req.user.id : 1;
+    const accounts = await SmartFinAccount.getAccounts(userId);
+    const defaultAcc = accounts.find(a => a.isDefault) || accounts[0];
+
     res.json({
       success: true,
-      settings: ocrSettingsData,
+      settings: {
+        ...ocrSettingsData,
+        autoDebitAccount: defaultAcc ? defaultAcc.name : 'BCA Utama'
+      },
       categories: masterCategoriesData,
       profile: userProfileData,
-      accounts: accountsData
+      accounts
     });
   } catch (error) {
     next(error);
@@ -775,15 +716,28 @@ exports.getSettings = async (req, res, next) => {
 // PUT /api/smartfin/settings
 exports.updateSettings = async (req, res, next) => {
   try {
+    const userId = req.user ? req.user.id : 1;
     const { settings, profile } = req.body;
-    if (settings) ocrSettingsData = { ...ocrSettingsData, ...settings };
+    if (settings) {
+      ocrSettingsData = { ...ocrSettingsData, ...settings };
+      if (settings.autoDebitAccount) {
+        await SmartFinAccount.setDefaultAccount(settings.autoDebitAccount, userId);
+      }
+    }
     if (profile) userProfileData = { ...userProfileData, ...profile };
+
+    const accounts = await SmartFinAccount.getAccounts(userId);
+    const defaultAcc = accounts.find(a => a.isDefault) || accounts[0];
 
     res.json({
       success: true,
-      message: 'Pengaturan OCR, profil, dan parameter AI berhasil disimpan ke Backend Server!',
-      settings: ocrSettingsData,
-      profile: userProfileData
+      message: 'Pengaturan OCR, profil, dan Rekening Default berhasil disimpan ke Database!',
+      settings: {
+        ...ocrSettingsData,
+        autoDebitAccount: defaultAcc ? defaultAcc.name : 'BCA Utama'
+      },
+      profile: userProfileData,
+      accounts
     });
   } catch (error) {
     next(error);

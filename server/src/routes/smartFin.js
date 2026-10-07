@@ -12,6 +12,7 @@ router.get('/accounts', smartFinController.getAccounts);
 router.get('/accounts/:id/mutations', smartFinController.getAccountMutations);
 router.post('/accounts', smartFinController.createAccount);
 router.post('/accounts/transfer', smartFinController.transferAccounts);
+router.put('/accounts/:id/set-default', smartFinController.setDefaultAccount);
 router.delete('/accounts/:id', smartFinController.deleteAccount);
 
 // Pos Anggaran / Budget Endpoints

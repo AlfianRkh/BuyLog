@@ -192,6 +192,20 @@ export default function SmartFinAccountsPage() {
     }
   };
 
+  // Set Default Account in Database
+  const handleSetDefaultAccount = async (id, name) => {
+    try {
+      const res = await api.smartFin.setDefaultAccount(id);
+      if (res && res.accounts) {
+        setAccounts(res.accounts);
+        triggerToast(`Rekening "${name}" berhasil dijadikan Rekening Default (disimpan di DB)!`);
+      }
+    } catch (err) {
+      console.error('Failed setting default account in BE:', err);
+      triggerToast('Gagal mengubah rekening default');
+    }
+  };
+
   const getAccountIcon = (type) => {
     switch (type) {
       case 'Bank':
@@ -329,7 +343,40 @@ export default function SmartFinAccountsPage() {
                       <span style={{ fontSize: '0.75rem', color: 'var(--gray-500)' }}>{acc.number || acc.type}</span>
                     </div>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                    {acc.isDefault ? (
+                      <span style={{
+                        fontSize: '0.6875rem',
+                        fontWeight: 700,
+                        color: '#047857',
+                        backgroundColor: '#ecfdf5',
+                        border: '1px solid #a7f3d0',
+                        padding: '2px 8px',
+                        borderRadius: 'var(--radius-full)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px'
+                      }}>
+                        <CheckCircle2 size={12} color="#10b981" /> Default
+                      </span>
+                    ) : (
+                      <button
+                        onClick={() => handleSetDefaultAccount(acc.id, acc.name)}
+                        style={{
+                          fontSize: '0.6875rem',
+                          fontWeight: 600,
+                          color: '#475569',
+                          backgroundColor: '#f1f5f9',
+                          border: '1px solid #cbd5e1',
+                          padding: '2px 8px',
+                          borderRadius: 'var(--radius-full)',
+                          cursor: 'pointer'
+                        }}
+                        title="Set sebagai Rekening Default"
+                      >
+                        Set Default
+                      </button>
+                    )}
                     <span style={{
                       fontSize: '0.6875rem',
                       fontWeight: 700,
