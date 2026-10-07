@@ -239,7 +239,9 @@ const PembelianListPage = () => {
                       </td>
                       <td>
                         <span className="location-pill">
-                          {purchase.city || (purchase.store_type === 'online' ? 'Online' : 'Surabaya')}
+                          {purchase.city
+                            ? `${purchase.city}${purchase.province ? `, ${purchase.province}` : ''}`
+                            : (purchase.store_type === 'online' ? 'Online' : 'Surabaya')}
                         </span>
                       </td>
                       <td>{formatDate(purchase.purchase_date)}</td>

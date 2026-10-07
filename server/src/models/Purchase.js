@@ -90,6 +90,7 @@ class Purchase {
         s.name as store_name,
         s.store_type,
         l.city,
+        l.province,
         (SELECT COUNT(*)::int FROM purchase_items pi WHERE pi.purchase_id = p.id) as item_count,
         (SELECT STRING_AGG(prod.name, ', ') FROM purchase_items pi 
          JOIN products prod ON pi.product_id = prod.id 

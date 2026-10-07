@@ -205,7 +205,9 @@ const PembelianDetailPage = () => {
                 <div className="info-row">
                   <span className="info-label">Alamat / Lokasi</span>
                   <span className="info-value">
-                    {purchase.store_address ? `${purchase.store_address}, ` : ''}{purchase.city || 'Surabaya'}
+                    {purchase.store_address ? `${purchase.store_address}, ` : ''}
+                    {purchase.city || 'Surabaya'}
+                    {purchase.province ? `, ${purchase.province}` : ''}
                   </span>
                 </div>
 

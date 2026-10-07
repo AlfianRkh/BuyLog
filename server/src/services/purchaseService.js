@@ -50,11 +50,14 @@ class PurchaseService {
         if (!loc) {
           loc = await Location.create({
             city: city.trim(),
-            province: province || null,
+            province: province ? province.trim() : null,
             latitude: latitude ? parseFloat(latitude) : null,
             longitude: longitude ? parseFloat(longitude) : null,
             userId
           });
+        } else if (province && province.trim() && (!loc.province || loc.province !== province.trim())) {
+          await client.query('UPDATE locations SET province = $1 WHERE id = $2', [province.trim(), loc.id]);
+          loc.province = province.trim();
         }
         if (loc) finalLocationId = loc.id;
       }
@@ -68,7 +71,12 @@ class PurchaseService {
           storeType: store_type,
           userId
         }, client);
-        if (store) finalStoreId = store.id;
+        if (store) {
+          finalStoreId = store.id;
+          if (finalLocationId && !store.location_id) {
+            await client.query('UPDATE stores SET location_id = $1 WHERE id = $2', [finalLocationId, store.id]);
+          }
+        }
       }
 
       // 2. Prepare items list

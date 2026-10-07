@@ -44,6 +44,7 @@ const PembelianCreatePage = () => {
   const [storeName, setStoreName] = useState('');
   const [storeAddress, setStoreAddress] = useState('');
   const [city, setCity] = useState('Surabaya');
+  const [province, setProvince] = useState('Jawa Timur');
   const [latitude, setLatitude] = useState(-7.2575);
   const [longitude, setLongitude] = useState(112.7521);
 
@@ -176,6 +177,7 @@ const PembelianCreatePage = () => {
         store_name: storeName.trim(),
         store_address: storeAddress.trim() || null,
         city: city.trim() || 'Surabaya',
+        province: province.trim() || 'Jawa Timur',
         latitude,
         longitude,
         payment_method: paymentMethod,
@@ -388,25 +390,25 @@ const PembelianCreatePage = () => {
                 </div>
               </div>
 
-              <div className="form-row-2">
-                <div className="form-group">
-                  <label className="form-label">Nama Toko *</label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    placeholder="Contoh: Toko Komputer ABC / Tokopedia"
-                    value={storeName}
-                    onChange={(e) => setStoreName(e.target.value)}
-                    list="store-suggestions"
-                    required
-                  />
-                  <datalist id="store-suggestions">
-                    {stores.map((s) => (
-                      <option key={s.id} value={s.name} />
-                    ))}
-                  </datalist>
-                </div>
+              <div className="form-group">
+                <label className="form-label">Nama Toko *</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  placeholder="Contoh: Toko Komputer ABC / Tokopedia"
+                  value={storeName}
+                  onChange={(e) => setStoreName(e.target.value)}
+                  list="store-suggestions"
+                  required
+                />
+                <datalist id="store-suggestions">
+                  {stores.map((s) => (
+                    <option key={s.id} value={s.name} />
+                  ))}
+                </datalist>
+              </div>
 
+              <div className="form-row-2">
                 <div className="form-group">
                   <label className="form-label">Kota</label>
                   <input
@@ -415,6 +417,17 @@ const PembelianCreatePage = () => {
                     placeholder="Contoh: Surabaya"
                     value={city}
                     onChange={(e) => setCity(e.target.value)}
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Provinsi</label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    placeholder="Contoh: Jawa Timur"
+                    value={province}
+                    onChange={(e) => setProvince(e.target.value)}
                   />
                 </div>
               </div>
