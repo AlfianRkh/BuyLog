@@ -326,3 +326,28 @@
   border-radius: var(--radius-full);
   transition: width 0.4s ease;
 }
+
+@media print {
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+  .prst-actions-group,
+  .prst-filter-bar,
+  nav,
+  header,
+  sidebar {
+    display: none !important;
+  }
+  .prst-container {
+    padding: 0 !important;
+    max-width: 100% !important;
+    gap: 16px !important;
+  }
+  .prst-kpi-card,
+  .prst-panel {
+    box-shadow: none !important;
+    border: 1px solid #e2e8f0 !important;
+    break-inside: avoid;
+  }
+}

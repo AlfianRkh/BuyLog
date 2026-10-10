@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import api from '../../services/api';
 import AddPlatformModal from '../../components/priceRadar/AddPlatformModal';
+import QuickLogModal from '../../components/priceRadar/QuickLogModal';
 import './PriceRadarSourcesPage.css';
 
 export default function PriceRadarSourcesPage() {
@@ -25,6 +26,9 @@ export default function PriceRadarSourcesPage() {
   const [viewMode, setViewMode] = useState('grid');
   const [filterCategory, setFilterCategory] = useState('all');
   const [addModalOpen, setAddModalOpen] = useState(false);
+  const [editSource, setEditSource] = useState(null);
+  const [logModalOpen, setLogModalOpen] = useState(false);
+  const [logSource, setLogSource] = useState(null);
   const [toastMsg, setToastMsg] = useState(null);
 
   const showToast = (msg) => {
@@ -35,7 +39,7 @@ export default function PriceRadarSourcesPage() {
   const fetchSources = async () => {
     try {
       setLoading(true);
-      const res = await api.priceRadar.getSources({ category: filterCategory });
+      const res = await api.priceRadar.getSources({});
       setSources(res.sources || []);
     } catch (err) {
       console.error('Failed fetching sources:', err);
@@ -46,92 +50,30 @@ export default function PriceRadarSourcesPage() {
 
   useEffect(() => {
     fetchSources();
-  }, [filterCategory]);
+  }, []);
 
-  const defaultPlatforms = [
-    {
-      name: "Tokopedia",
-      type: "MARKETPLACE",
-      catKey: "marketplace",
-      url: "https://tokopedia.com",
-      displayUrl: "tokopedia.com",
-      badge: "5x Best Deal Saat Ini",
-      winRate: "WIN RATE 42%",
-      priceLogs: "32 Entri",
-      monitored: "11 Produk",
-      activity: "Sangat Aktif"
-    },
-    {
-      name: "Shopee",
-      type: "MARKETPLACE",
-      catKey: "marketplace",
-      url: "https://shopee.co.id",
-      displayUrl: "shopee.co.id",
-      badge: "3x Best Deal Aktif",
-      winRate: "WIN RATE 33%",
-      priceLogs: "28 Entri",
-      monitored: "9 Produk",
-      activity: "Aktif"
-    },
-    {
-      name: "Blibli",
-      type: "E-COMMERCE",
-      catKey: "marketplace",
-      url: "https://blibli.com",
-      displayUrl: "blibli.com",
-      badge: "1x Best Deal Aktif",
-      winRate: "WIN RATE 18%",
-      priceLogs: "14 Entri",
-      monitored: "6 Produk",
-      activity: "Moderat"
-    },
-    {
-      name: "Klik Indomaret / Alfa",
-      type: "GROCERY & TOKO",
-      catKey: "grocery",
-      url: "https://klikindomaret.com",
-      displayUrl: "klikindomaret.com",
-      badge: "Kategori Groceries",
-      winRate: "SEMBAKO & FMCG",
-      priceLogs: "5 Entri",
-      monitored: "3 Produk",
-      activity: "Berkala"
-    },
-    {
-      name: "iBox / Digimap",
-      type: "OFFLINE & ONLINE",
-      catKey: "offline",
-      url: "https://ibox.co.id",
-      displayUrl: "ibox.co.id",
-      badge: "Apple Authorized",
-      winRate: "SRP REFERENCE",
-      priceLogs: "3 Entri",
-      monitored: "2 Gadget",
-      activity: "Stabil (SRP)"
-    },
-    {
-      name: "Harco / Mangga Dua",
-      type: "TOKO FISIK",
-      catKey: "offline",
-      url: "#",
-      displayUrl: "Survey Langsung (Offline Store)",
-      badge: "Perlu Update Segera",
-      winRate: "8 HARI LALU",
-      priceLogs: "2 Entri",
-      monitored: "GPU / RAM Retail",
-      activity: "Kadaluarsa",
-      isStale: true
-    }
-  ];
+  const getCategoryKey = (item) => {
+    const t = (item.type || '').toUpperCase();
+    if (item.catKey) return item.catKey;
+    if (t.includes('MARKET') || t.includes('ECOMMERCE') || t.includes('E-COMMERCE') || t.includes('ONLINE') || t.includes('OFFICIAL_BRAND')) return 'marketplace';
+    if (t.includes('FISIK') || t.includes('OFFLINE') || t.includes('RETAIL') || t.includes('OFFLINE_RETAIL')) return 'offline';
+    if (t.includes('GROCERY') || t.includes('FMCG') || t.includes('TOKO')) return 'grocery';
+    return 'marketplace';
+  };
 
-  const rawList = sources.length > 0 ? sources : defaultPlatforms;
-  const displayList = rawList.filter(item => {
+  const marketplaceCount = sources.filter(s => getCategoryKey(s) === 'marketplace').length;
+  const offlineCount = sources.filter(s => getCategoryKey(s) === 'offline').length;
+  const groceryCount = sources.filter(s => getCategoryKey(s) === 'grocery').length;
+
+  const displayList = sources.filter(item => {
     if (filterCategory === 'all') return true;
-    if (filterCategory === 'marketplace') return item.catKey === 'marketplace' || item.type === 'MARKETPLACE' || item.type === 'E-COMMERCE';
-    if (filterCategory === 'offline') return item.catKey === 'offline' || item.type === 'TOKO FISIK' || item.type === 'OFFLINE & ONLINE';
-    if (filterCategory === 'grocery') return item.catKey === 'grocery' || item.type === 'GROCERY & TOKO';
-    return true;
+    return getCategoryKey(item) === filterCategory;
   });
+
+  const totalLogsCount = sources.reduce((sum, s) => sum + (parseInt(s.price_logs_count) || 0), 0);
+  const staleCount = sources.filter(s => s.is_stale || s.isStale).length;
+  const topWinner = sources.length > 0 ? sources[0].name : '-';
+  const topWinnerRate = sources.length > 0 ? (sources[0].win_rate !== undefined ? `${sources[0].win_rate}%` : (sources[0].winRate || '0%')) : '0%';
 
   return (
     <div className="prs-container">
@@ -163,14 +105,14 @@ export default function PriceRadarSourcesPage() {
         <div className="prs-title-group">
           <div className="prs-meta-tag">
             <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: 'var(--success-500)', display: 'inline-block' }}></span>
-            <span>Platform Index v1.0</span>
+            <span>Platform Database Index</span>
           </div>
           <h1 className="prs-page-title">
             <Store size={26} color="var(--primary-600)" />
-            <span>Direktori Sumber & Platform Harga</span>
+            <span>Direktori Sumber &amp; Platform Harga</span>
           </h1>
           <p className="prs-page-subtitle">
-            Kelola marketplace, toko online, dan gerai fisik untuk pengorganisasian log harga dan visualisasi grafik perbandingan.
+            Kelola marketplace, toko online, dan gerai fisik secara riil dari database PostgreSQL.
           </p>
         </div>
 
@@ -193,7 +135,10 @@ export default function PriceRadarSourcesPage() {
           </div>
 
           <button
-            onClick={() => setAddModalOpen(true)}
+            onClick={() => {
+              setEditSource(null);
+              setAddModalOpen(true);
+            }}
             className="prs-btn-primary"
           >
             <PlusCircle size={18} />
@@ -212,11 +157,11 @@ export default function PriceRadarSourcesPage() {
             </div>
           </div>
           <div>
-            <div className="prs-kpi-value">6 <span style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--gray-500)' }}>Sumber</span></div>
+            <div className="prs-kpi-value">{sources.length} <span style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--gray-500)' }}>Sumber</span></div>
           </div>
           <div className="prs-kpi-footer">
-            <span>4 Online / 2 Offline</span>
-            <span style={{ color: 'var(--success-600)', fontWeight: 700 }}>100% Aktif</span>
+            <span>Database Registered</span>
+            <span style={{ color: 'var(--success-600)', fontWeight: 700 }}>100% Active</span>
           </div>
         </div>
 
@@ -228,11 +173,11 @@ export default function PriceRadarSourcesPage() {
             </div>
           </div>
           <div>
-            <div className="prs-kpi-value" style={{ color: 'var(--primary-600)' }}>84 <span style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--gray-500)' }}>Entri</span></div>
+            <div className="prs-kpi-value" style={{ color: 'var(--primary-600)' }}>{totalLogsCount} <span style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--gray-500)' }}>Entri</span></div>
           </div>
           <div className="prs-kpi-footer">
-            <span>+14 Entri Pekan Ini</span>
-            <span style={{ color: 'var(--primary-600)', fontWeight: 700 }}>↑ 18.2%</span>
+            <span>Database Records</span>
+            <span style={{ color: 'var(--primary-600)', fontWeight: 700 }}>Active Logs</span>
           </div>
         </div>
 
@@ -244,27 +189,29 @@ export default function PriceRadarSourcesPage() {
             </div>
           </div>
           <div>
-            <div className="prs-kpi-value" style={{ color: 'var(--success-600)' }}>Tokopedia <span style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--success-700)' }}>(42%)</span></div>
+            <div className="prs-kpi-value" style={{ color: 'var(--success-600)' }}>{topWinner} <span style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--success-700)' }}>({topWinnerRate})</span></div>
           </div>
           <div className="prs-kpi-footer">
-            <span>5x Best Deal Aktif</span>
-            <span style={{ color: 'var(--success-600)', fontWeight: 700 }}>Dominan Tech</span>
+            <span>Best Win Rate</span>
+            <span style={{ color: 'var(--success-600)', fontWeight: 700 }}>Database Ranking</span>
           </div>
         </div>
 
-        <div className="prs-kpi-card" style={{ borderColor: '#FCA5A5', backgroundColor: '#FEF2F2' }}>
+        <div className="prs-kpi-card" style={{ borderColor: staleCount > 0 ? '#FCA5A5' : 'var(--gray-200)', backgroundColor: staleCount > 0 ? '#FEF2F2' : '#ffffff' }}>
           <div className="prs-kpi-header">
-            <span className="prs-kpi-label" style={{ color: 'var(--danger-700)' }}>Status Data Stale</span>
-            <div className="prs-kpi-icon-box" style={{ backgroundColor: '#FEE2E2', color: 'var(--danger-600)' }}>
+            <span className="prs-kpi-label" style={{ color: staleCount > 0 ? 'var(--danger-700)' : 'var(--gray-600)' }}>Status Data Stale</span>
+            <div className="prs-kpi-icon-box" style={{ backgroundColor: staleCount > 0 ? '#FEE2E2' : 'var(--gray-100)', color: staleCount > 0 ? 'var(--danger-600)' : 'var(--gray-600)' }}>
               <AlertTriangle size={20} />
             </div>
           </div>
           <div>
-            <div className="prs-kpi-value" style={{ color: 'var(--danger-600)' }}>1 <span style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--danger-500)' }}>Perlu Update</span></div>
+            <div className="prs-kpi-value" style={{ color: staleCount > 0 ? 'var(--danger-600)' : 'var(--gray-800)' }}>{staleCount} <span style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--gray-500)' }}>Perlu Update</span></div>
           </div>
-          <div className="prs-kpi-footer" style={{ borderTopColor: '#FCA5A5' }}>
-            <span style={{ color: 'var(--gray-600)' }}>Harco Komputer</span>
-            <button style={{ color: 'var(--danger-700)', fontWeight: 800, background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }} onClick={() => showToast("Fokus ke Harco Mangga Dua")}>Cek Sekarang</button>
+          <div className="prs-kpi-footer" style={{ borderTopColor: staleCount > 0 ? '#FCA5A5' : 'var(--gray-100)' }}>
+            <span style={{ color: 'var(--gray-600)' }}>{staleCount > 0 ? 'Harco Komputer' : 'Data Terkini'}</span>
+            {staleCount > 0 && (
+              <button style={{ color: 'var(--danger-700)', fontWeight: 800, background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }} onClick={() => showToast("Fokus update data stale")}>Cek Sekarang</button>
+            )}
           </div>
         </div>
       </div>
@@ -280,9 +227,9 @@ export default function PriceRadarSourcesPage() {
           <div className="prs-filter-pills">
             {[
               { id: "all", label: "Semua" },
-              { id: "marketplace", label: "Marketplace (3)" },
-              { id: "offline", label: "Retail Offline (2)" },
-              { id: "grocery", label: "Groceries (1)" }
+              { id: "marketplace", label: `Marketplace (${marketplaceCount})` },
+              { id: "offline", label: `Retail Offline (${offlineCount})` },
+              { id: "grocery", label: `Groceries (${groceryCount})` }
             ].map((f) => (
               <button
                 key={f.id}
@@ -297,69 +244,89 @@ export default function PriceRadarSourcesPage() {
 
         {/* Cards Grid */}
         <div className={viewMode === "compact" ? "" : "prs-cards-grid"} style={viewMode === "compact" ? { display: 'flex', flexDirection: 'column', gap: '12px' } : {}}>
-          {displayList.map((p, idx) => (
-            <div
-              key={idx}
-              className={`prs-card ${p.isStale ? 'prs-card-stale' : ''}`}
-            >
-              <div>
-                <div className="prs-card-header">
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
-                    <div className="prs-store-icon" style={p.isStale ? { backgroundColor: '#FEE2E2', color: 'var(--danger-600)', borderColor: '#FCA5A5' } : {}}>
-                      {p.isStale ? <Building size={24} /> : <ShoppingBag size={24} />}
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-                      <div className="prs-store-title">
-                        <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.name}</span>
-                        {!p.isStale && <CheckCircle2 size={16} color="var(--success-600)" style={{ flexShrink: 0 }} />}
+          {displayList.map((p, idx) => {
+            const isItemStale = p.is_stale || p.isStale;
+            const badgeLabel = p.badge || p.notes || (p.type === 'OFFICIAL_BRAND' || p.type === 'MARKETPLACE' ? 'Official Store' : 'Verified Store');
+            const winRateText = p.win_rate !== undefined && p.win_rate !== null ? (String(p.win_rate).includes('%') ? `WIN RATE ${p.win_rate}` : `WIN RATE ${p.win_rate}%`) : (p.winRate || 'WIN RATE 20%');
+            const priceLogsText = p.price_logs_count !== undefined && p.price_logs_count !== null ? `${p.price_logs_count} Entri` : (p.priceLogs || '0 Entri');
+            const statusText = p.activity_status || p.monitored || (isItemStale ? 'Stale' : 'Aktif');
+
+            return (
+              <div
+                key={idx}
+                className={`prs-card ${isItemStale ? 'prs-card-stale' : ''}`}
+              >
+                <div>
+                  <div className="prs-card-header">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
+                      <div className="prs-store-icon" style={isItemStale ? { backgroundColor: '#FEE2E2', color: 'var(--danger-600)', borderColor: '#FCA5A5' } : {}}>
+                        {isItemStale ? <Building size={24} /> : <ShoppingBag size={24} />}
                       </div>
-                      <span className="prs-store-url">{p.displayUrl || p.url}</span>
+                      <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+                        <div className="prs-store-title">
+                          <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.name}</span>
+                          {!isItemStale && <CheckCircle2 size={16} color="var(--success-600)" style={{ flexShrink: 0 }} />}
+                        </div>
+                        <span className="prs-store-url">{p.displayUrl || p.url || '-'}</span>
+                      </div>
+                    </div>
+                    <span className="prs-badge-type" style={isItemStale ? { backgroundColor: '#FEE2E2', color: 'var(--danger-700)', borderColor: '#FCA5A5' } : {}}>
+                      {p.type}
+                    </span>
+                  </div>
+
+                  <div className="prs-badge-box" style={{ marginTop: '14px', backgroundColor: isItemStale ? '#FEF2F2' : 'var(--gray-50)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 600, color: isItemStale ? 'var(--danger-700)' : 'var(--gray-800)' }}>
+                      {isItemStale ? <AlertTriangle size={16} color="var(--danger-600)" /> : <Award size={16} color="var(--primary-600)" />}
+                      <span>{badgeLabel}</span>
+                    </div>
+                    <span style={{ fontWeight: 800, color: 'var(--gray-900)', backgroundColor: '#ffffff', padding: '2px 8px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--gray-200)' }}>
+                      {winRateText}
+                    </span>
+                  </div>
+
+                  <div className="prs-stats-row" style={{ marginTop: '12px' }}>
+                    <div className="prs-stat-box">
+                      <span className="prs-stat-box-label">PRICE LOGS</span>
+                      <span className="prs-stat-box-value">{priceLogsText}</span>
+                    </div>
+                    <div className="prs-stat-box">
+                      <span className="prs-stat-box-label">STATUS</span>
+                      <span className="prs-stat-box-value" style={{ color: 'var(--primary-600)' }}>{statusText}</span>
                     </div>
                   </div>
-                  <span className="prs-badge-type" style={p.isStale ? { backgroundColor: '#FEE2E2', color: 'var(--danger-700)', borderColor: '#FCA5A5' } : {}}>
-                    {p.type}
-                  </span>
                 </div>
 
-                <div className="prs-badge-box" style={{ marginTop: '14px', backgroundColor: p.isStale ? '#FEF2F2' : 'var(--gray-50)' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 600, color: p.isStale ? 'var(--danger-700)' : 'var(--gray-800)' }}>
-                    {p.isStale ? <AlertTriangle size={16} color="var(--danger-600)" /> : <Award size={16} color="var(--primary-600)" />}
-                    <span>{p.badge || 'Official Store'}</span>
+                <div className="prs-card-footer">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <button
+                      onClick={() => {
+                        setEditSource(p);
+                        setAddModalOpen(true);
+                      }}
+                      className="prs-btn-secondary"
+                    >
+                      <Edit size={14} color="var(--gray-500)" /> Edit
+                    </button>
+                    <button
+                      onClick={() => {
+                        setLogSource(p);
+                        setLogModalOpen(true);
+                      }}
+                      className="prs-btn-secondary"
+                    >
+                      <History size={14} color="var(--primary-600)" /> Log
+                    </button>
                   </div>
-                  <span style={{ fontWeight: 800, color: 'var(--gray-900)', backgroundColor: '#ffffff', padding: '2px 8px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--gray-200)' }}>
-                    {p.winRate || 'WIN RATE 20%'}
-                  </span>
-                </div>
 
-                <div className="prs-stats-row" style={{ marginTop: '12px' }}>
-                  <div className="prs-stat-box">
-                    <span className="prs-stat-box-label">PRICE LOGS</span>
-                    <span className="prs-stat-box-value">{p.priceLogs || '12 Entri'}</span>
-                  </div>
-                  <div className="prs-stat-box">
-                    <span className="prs-stat-box-label">STATUS</span>
-                    <span className="prs-stat-box-value" style={{ color: 'var(--primary-600)' }}>{p.monitored || 'Aktif'}</span>
-                  </div>
+                  <a className="prs-btn-primary" style={{ padding: '7px 14px', fontSize: '0.75rem', textDecoration: 'none' }} href={p.url || '#'} target="_blank" rel="noopener noreferrer">
+                    <span>Buka Toko</span>
+                    <ExternalLink size={14} />
+                  </a>
                 </div>
               </div>
-
-              <div className="prs-card-footer">
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <button onClick={() => showToast(`Edit ${p.name}`)} className="prs-btn-secondary">
-                    <Edit size={14} color="var(--gray-500)" /> Edit
-                  </button>
-                  <button onClick={() => showToast(`Log riwayat ${p.name}`)} className="prs-btn-secondary">
-                    <History size={14} color="var(--primary-600)" /> Log
-                  </button>
-                </div>
-
-                <a className="prs-btn-primary" style={{ padding: '7px 14px', fontSize: '0.75rem', textDecoration: 'none' }} href={p.url || '#'} target="_blank" rel="noopener noreferrer">
-                  <span>Buka Toko</span>
-                  <ExternalLink size={14} />
-                </a>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 
@@ -416,7 +383,21 @@ export default function PriceRadarSourcesPage() {
 
       <AddPlatformModal
         isOpen={addModalOpen}
-        onClose={() => setAddModalOpen(false)}
+        onClose={() => {
+          setAddModalOpen(false);
+          setEditSource(null);
+        }}
+        initialData={editSource}
+        onSuccess={(msg) => { showToast(msg); fetchSources(); }}
+      />
+
+      <QuickLogModal
+        isOpen={logModalOpen}
+        onClose={() => {
+          setLogModalOpen(false);
+          setLogSource(null);
+        }}
+        initialPlatform={logSource?.name || ''}
         onSuccess={(msg) => { showToast(msg); fetchSources(); }}
       />
     </div>

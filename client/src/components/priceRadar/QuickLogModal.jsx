@@ -2,13 +2,20 @@ import React, { useState } from 'react';
 import { PlusCircle, X, CheckCircle2 } from 'lucide-react';
 import api from '../../services/api';
 
-export default function QuickLogModal({ isOpen, onClose, onSuccess, initialProductId = '' }) {
+export default function QuickLogModal({ isOpen, onClose, onSuccess, initialProductId = '', initialPlatform = '' }) {
   const [watchlistId, setWatchlistId] = useState(initialProductId);
-  const [platform, setPlatform] = useState('Tokopedia Official');
+  const [platform, setPlatform] = useState(initialPlatform || 'Tokopedia Official');
   const [price, setPrice] = useState('2.890.000');
   const [note, setNote] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+
+  React.useEffect(() => {
+    if (isOpen) {
+      if (initialPlatform) setPlatform(initialPlatform);
+      if (initialProductId) setWatchlistId(initialProductId);
+    }
+  }, [isOpen, initialPlatform, initialProductId]);
 
   if (!isOpen) return null;
 
@@ -60,6 +67,9 @@ export default function QuickLogModal({ isOpen, onClose, onSuccess, initialProdu
               onChange={(e) => setPlatform(e.target.value)}
               className="w-full bg-slate-50 text-slate-800 text-sm p-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white"
             >
+              {initialPlatform && !['Tokopedia Official', 'Shopee Mall', 'Blibli Official', 'Indomaret / Alfamart Point', 'Toko Fisik / Offline'].includes(initialPlatform) && (
+                <option value={initialPlatform}>{initialPlatform}</option>
+              )}
               <option value="Tokopedia Official">Tokopedia Official</option>
               <option value="Shopee Mall">Shopee Mall</option>
               <option value="Blibli Official">Blibli Official</option>

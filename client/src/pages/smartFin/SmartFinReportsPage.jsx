@@ -45,14 +45,16 @@ export default function SmartFinReportsPage() {
     fetchReports();
   }, []);
 
-  const inflationItems = [
-    { name: 'Bimoli Spesial Minyak Goreng 2L', store: 'Indomaret MERR', oldPrice: 35000, newPrice: 38500, change: '+10.0%', status: 'inflasi', icon: '🧴' },
-    { name: 'Ultra Milk Full Cream 1L', store: 'Superindo Surabaya', oldPrice: 19000, newPrice: 19500, change: '+2.6%', status: 'naik', icon: '🥛' },
-    { name: 'Sunlight Jeruk Nipis 750ml', store: 'Indomaret Point', oldPrice: 16500, newPrice: 16000, change: '-3.0%', status: 'promo', icon: '🧼' },
-    { name: 'Telur Ayam Negeri 1kg', store: 'Superindo Merr', oldPrice: 29000, newPrice: 31500, change: '+8.6%', status: 'inflasi', icon: '🥚' }
-  ];
+  const inflationItems = reportsData.inflationItems && reportsData.inflationItems.length > 0
+    ? reportsData.inflationItems
+    : [
+      { name: 'Bimoli Spesial Minyak Goreng 2L', store: 'Indomaret MERR', oldPrice: 35000, newPrice: 38500, change: '+10.0%', status: 'inflasi', icon: '🧴' },
+      { name: 'Ultra Milk Full Cream 1L', store: 'Superindo Surabaya', oldPrice: 19000, newPrice: 19500, change: '+2.6%', status: 'naik', icon: '🥛' },
+      { name: 'Sunlight Jeruk Nipis 750ml', store: 'Indomaret Point', oldPrice: 16500, newPrice: 16000, change: '-3.0%', status: 'promo', icon: '🧼' },
+      { name: 'Telur Ayam Negeri 1kg', store: 'Superindo Merr', oldPrice: 29000, newPrice: 31500, change: '+8.6%', status: 'inflasi', icon: '🥚' }
+    ];
 
-  const filteredItems = inflationItems.filter(i => i.name.toLowerCase().includes(itemSearch.toLowerCase()));
+  const filteredItems = inflationItems.filter(i => (i.name || '').toLowerCase().includes(itemSearch.toLowerCase()));
 
   return (
     <div className="sf-container">

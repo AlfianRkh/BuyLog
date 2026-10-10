@@ -51,22 +51,31 @@ export default function SmartFinSettingsPage() {
   const fetchSettings = async () => {
     try {
       setLoading(true);
-      const res = await api.smartFin.getSettings();
-      if (res && res.success) {
-        if (res.settings) {
-          setThreshold(res.settings.confidenceThreshold || 85);
-          setAutoCat(res.settings.autoCategorization !== false);
-          setAutoCrop(res.settings.autoCrop !== false);
-          setDupeGuard(res.settings.duplicateGuard !== false);
-          if (res.settings.autoDebitAccount) setDefaultAccount(res.settings.autoDebitAccount);
+      const [settingsRes, categoriesRes] = await Promise.all([
+        api.smartFin.getSettings(),
+        api.smartFin.getCategories()
+      ]);
+
+      if (settingsRes && settingsRes.success) {
+        if (settingsRes.settings) {
+          setThreshold(settingsRes.settings.confidenceThreshold || 85);
+          setAutoCat(settingsRes.settings.autoCategorization !== false);
+          setAutoCrop(settingsRes.settings.autoCrop !== false);
+          setDupeGuard(settingsRes.settings.duplicateGuard !== false);
+          if (settingsRes.settings.autoDebitAccount) setDefaultAccount(settingsRes.settings.autoDebitAccount);
         }
-        if (res.categories) setCategories(res.categories);
-        if (res.accounts) setAccounts(res.accounts);
-        if (res.profile) setUserProfile(res.profile);
+        if (settingsRes.accounts) setAccounts(settingsRes.accounts);
+        if (settingsRes.profile) setUserProfile(settingsRes.profile);
+      }
+
+      if (categoriesRes && categoriesRes.categories) {
+        setCategories(categoriesRes.categories);
+      } else if (settingsRes && settingsRes.categories) {
+        setCategories(settingsRes.categories);
       }
     } catch (err) {
-      console.error('Failed fetching settings from BE:', err);
-      triggerToast('Gagal memuat pengaturan dari server BE.');
+      console.error('Failed fetching settings from Database:', err);
+      triggerToast('Gagal memuat pengaturan & data kategori dari Database.');
     } finally {
       setLoading(false);
     }

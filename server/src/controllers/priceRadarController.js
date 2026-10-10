@@ -84,10 +84,49 @@ exports.createSource = async (req, res, next) => {
   }
 };
 
+exports.updateSource = async (req, res, next) => {
+  try {
+    const source = await priceRadarService.updateSource(req.user.id, req.params.id, req.body);
+    res.json({ message: 'Sumber harga berhasil diperbarui.', source });
+  } catch (error) {
+    next(error);
+  }
+};
+
 exports.getStats = async (req, res, next) => {
   try {
     const stats = await priceRadarService.getStats(req.user.id, req.query.time);
     res.json(stats);
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.getCategories = async (req, res, next) => {
+  try {
+    const Category = require('../models/Category');
+    const categories = await Category.findAll(req.user.id, 'price_radar');
+    res.json({ categories });
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.createCategory = async (req, res, next) => {
+  try {
+    const Category = require('../models/Category');
+    const { name, icon, type } = req.body;
+    if (!name || !name.trim()) {
+      return res.status(400).json({ message: 'Nama kategori wajib diisi.' });
+    }
+    const category = await Category.create({
+      name: name.trim(),
+      icon: icon || '🏷️',
+      type: type || 'Watching',
+      feature: 'price_radar',
+      userId: req.user.id
+    });
+    res.status(201).json({ message: 'Kategori Price Radar berhasil ditambahkan.', category });
   } catch (error) {
     next(error);
   }

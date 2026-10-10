@@ -22,5 +22,10 @@ router.post('/logs', priceRadarController.recordLog);
 // Sources / Platforms
 router.get('/sources', priceRadarController.getSources);
 router.post('/sources', priceRadarController.createSource);
+router.put('/sources/:id', priceRadarController.updateSource);
+
+// Categories for PriceRadar
+router.get('/categories', priceRadarController.getCategories);
+router.post('/categories', priceRadarController.createCategory);
 
 module.exports = router;

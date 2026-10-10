@@ -16,12 +16,34 @@ async function runMigrations() {
 
     CREATE TABLE IF NOT EXISTS categories (
       id SERIAL PRIMARY KEY,
-      name VARCHAR(100) NOT NULL,
-      icon VARCHAR(50) DEFAULT 'Package',
+      name VARCHAR(150) NOT NULL,
+      icon VARCHAR(50) DEFAULT '🏷️',
       color VARCHAR(20) DEFAULT '#3B82F6',
+      type VARCHAR(50) DEFAULT 'Pengeluaran',
+      feature VARCHAR(50) NOT NULL DEFAULT 'shopping',
       user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
       created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
     );
+
+    ALTER TABLE categories ADD COLUMN IF NOT EXISTS type VARCHAR(50) DEFAULT 'Pengeluaran';
+    ALTER TABLE categories ADD COLUMN IF NOT EXISTS feature VARCHAR(50) NOT NULL DEFAULT 'shopping';
+    CREATE INDEX IF NOT EXISTS idx_categories_user_feature ON categories(user_id, feature);
+
+    -- Copy existing smartfin_categories into unified categories table if smartfin_categories exists
+    DO $$ 
+    BEGIN
+      IF EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'smartfin_categories') THEN
+        INSERT INTO categories (user_id, name, icon, type, feature)
+        SELECT sc.user_id, sc.name, sc.icon, sc.type, 'smartfin'
+        FROM smartfin_categories sc
+        WHERE NOT EXISTS (
+          SELECT 1 FROM categories c 
+          WHERE c.user_id = sc.user_id 
+            AND LOWER(c.name) = LOWER(sc.name) 
+            AND c.feature = 'smartfin'
+        );
+      END IF;
+    END $$;
 
     CREATE TABLE IF NOT EXISTS brands (
       id SERIAL PRIMARY KEY,
@@ -273,6 +295,166 @@ Terima kasih banyak ya! Semoga lancar rezekinya.';
     );
 
     CREATE INDEX IF NOT EXISTS idx_smartfin_categories_user ON smartfin_categories(user_id);
+
+    -- SmartFin Split-Bill Tables
+    CREATE TABLE IF NOT EXISTS smartfin_split_bills (
+      id SERIAL PRIMARY KEY,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      title VARCHAR(255) NOT NULL,
+      merchant VARCHAR(255) NOT NULL,
+      invoice_no VARCHAR(100),
+      date_str VARCHAR(100),
+      payment_method VARCHAR(50) DEFAULT 'QRIS',
+      paid_by VARCHAR(150) DEFAULT 'Saya',
+      subtotal_menu NUMERIC(15, 2) DEFAULT 0,
+      tax_pb1 NUMERIC(15, 2) DEFAULT 0,
+      service NUMERIC(15, 2) DEFAULT 0,
+      total_bill NUMERIC(15, 2) DEFAULT 0,
+      created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS smartfin_split_bill_participants (
+      id SERIAL PRIMARY KEY,
+      split_bill_id INTEGER NOT NULL REFERENCES smartfin_split_bills(id) ON DELETE CASCADE,
+      name VARCHAR(150) NOT NULL,
+      is_host BOOLEAN DEFAULT FALSE,
+      is_paid BOOLEAN DEFAULT FALSE,
+      portion NUMERIC(15, 2) DEFAULT 0,
+      description TEXT,
+      created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_smartfin_split_bills_user ON smartfin_split_bills(user_id);
+    CREATE INDEX IF NOT EXISTS idx_smartfin_split_bill_participants ON smartfin_split_bill_participants(split_bill_id);
+
+    -- SmartFin Mutations Table
+    CREATE TABLE IF NOT EXISTS smartfin_mutations (
+      id SERIAL PRIMARY KEY,
+      account_id INTEGER REFERENCES smartfin_accounts(id) ON DELETE CASCADE,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      date_str VARCHAR(100) NOT NULL,
+      merchant VARCHAR(255) NOT NULL,
+      category VARCHAR(150),
+      amount NUMERIC(15, 2) NOT NULL,
+      type VARCHAR(20) NOT NULL CHECK(type IN ('income', 'expense')),
+      method VARCHAR(100),
+      invoice VARCHAR(100),
+      created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_smartfin_mutations_acc ON smartfin_mutations(account_id);
+    CREATE INDEX IF NOT EXISTS idx_smartfin_mutations_user ON smartfin_mutations(user_id);
+
+    -- SmartFin Budgets Table
+    CREATE TABLE IF NOT EXISTS smartfin_budgets (
+      id SERIAL PRIMARY KEY,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      name VARCHAR(150) NOT NULL,
+      limit_amount NUMERIC(15, 2) NOT NULL DEFAULT 0,
+      spent_amount NUMERIC(15, 2) NOT NULL DEFAULT 0,
+      icon VARCHAR(50) DEFAULT '💼',
+      category VARCHAR(50) DEFAULT 'Pokok',
+      created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_smartfin_budgets_user ON smartfin_budgets(user_id);
+
+    -- SmartFin Transactions Table
+    CREATE TABLE IF NOT EXISTS smartfin_transactions (
+      id SERIAL PRIMARY KEY,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      date_str VARCHAR(100) NOT NULL,
+      time_str VARCHAR(50),
+      merchant VARCHAR(255) NOT NULL,
+      items_count INTEGER DEFAULT 1,
+      amount NUMERIC(15, 2) NOT NULL,
+      type VARCHAR(20) NOT NULL CHECK(type IN ('expense', 'income')),
+      account VARCHAR(150),
+      category VARCHAR(150),
+      status VARCHAR(50) DEFAULT 'Verified',
+      receipt_no VARCHAR(100),
+      confidence NUMERIC(5, 2) DEFAULT 100,
+      created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_smartfin_transactions_user ON smartfin_transactions(user_id);
+
+    -- WishBoard Tables
+    CREATE TABLE IF NOT EXISTS wishboard_items (
+      id SERIAL PRIMARY KEY,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      name VARCHAR(255) NOT NULL,
+      brand VARCHAR(150),
+      tag VARCHAR(100) DEFAULT 'Top Pick',
+      category VARCHAR(150),
+      category_slug VARCHAR(100),
+      img TEXT,
+      estimated_min NUMERIC(15, 2) DEFAULT 0,
+      estimated_max NUMERIC(15, 2) DEFAULT 0,
+      price NUMERIC(15, 2) NOT NULL DEFAULT 0,
+      saved NUMERIC(15, 2) NOT NULL DEFAULT 0,
+      urgency INTEGER DEFAULT 3,
+      want INTEGER DEFAULT 3,
+      status VARCHAR(50) DEFAULT 'saving',
+      deadline DATE,
+      sku VARCHAR(100),
+      guarantee VARCHAR(100),
+      pros JSONB DEFAULT '[]',
+      cons JSONB DEFAULT '[]',
+      created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS wishboard_deposits (
+      id SERIAL PRIMARY KEY,
+      wishboard_id INTEGER NOT NULL REFERENCES wishboard_items(id) ON DELETE CASCADE,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      amount NUMERIC(15, 2) NOT NULL,
+      note TEXT,
+      deposit_date DATE NOT NULL DEFAULT CURRENT_DATE,
+      created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_wishboard_items_user ON wishboard_items(user_id, status);
+
+    -- StockPantry Tables
+    CREATE TABLE IF NOT EXISTS stockpantry_items (
+      id SERIAL PRIMARY KEY,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      name VARCHAR(255) NOT NULL,
+      category VARCHAR(150),
+      zone VARCHAR(150),
+      zone_id VARCHAR(100),
+      qty INTEGER DEFAULT 1,
+      unit VARCHAR(50) DEFAULT 'Pcs',
+      max_qty INTEGER DEFAULT 5,
+      status VARCHAR(50) DEFAULT 'safe',
+      expiry_date DATE,
+      price NUMERIC(15, 2) DEFAULT 0,
+      brand VARCHAR(150),
+      store VARCHAR(150),
+      img TEXT,
+      notes TEXT,
+      created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS stockpantry_shopping (
+      id SERIAL PRIMARY KEY,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      item_name VARCHAR(255) NOT NULL,
+      category VARCHAR(150),
+      qty INTEGER DEFAULT 1,
+      unit VARCHAR(50) DEFAULT 'Pcs',
+      est_price NUMERIC(15, 2) DEFAULT 0,
+      is_checked BOOLEAN DEFAULT FALSE,
+      created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_stockpantry_items_user ON stockpantry_items(user_id);
   `);
 
   console.log('PostgreSQL database migrations completed successfully.');

@@ -78,23 +78,8 @@ async function seedPriceRadar(userId) {
     INSERT INTO price_radar_logs (watchlist_id, user_id, platform_name, price, notes)
     VALUES 
       ($1, $2, 'Tokopedia Official', 2890000, 'Voucher diskon gajian 8% + cashback 100k GoPay Coins. Rekor termurah!'),
-      ($1, $2, 'Shopee Mall', 3050000, 'Flash sale promo midnight brand Logitech.'),
-      ($1, $2, 'Blibli Official', 3150000, 'Harga promo bundling mouse pad.')
+      ($1, $2, 'Shopee Mall', 3050000, 'Flash sale promo midnight brand Logitech.')
   `, [w1, userId]);
-
-  const insertSource = async (name, type, url, winRate, logsCount, status, isStale) => {
-    await db.query(`
-      INSERT INTO price_radar_sources (user_id, name, type, url, win_rate, price_logs_count, activity_status, is_stale)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-    `, [userId, name, type, url, winRate, logsCount, status, isStale]);
-  };
-
-  await insertSource('Tokopedia', 'MARKETPLACE', 'https://tokopedia.com', 42, 32, 'Sangat Aktif', false);
-  await insertSource('Shopee', 'MARKETPLACE', 'https://shopee.co.id', 33, 28, 'Aktif', false);
-  await insertSource('Blibli', 'E-COMMERCE', 'https://blibli.com', 18, 14, 'Moderat', false);
-  await insertSource('Klik Indomaret / Alfa', 'GROCERY & TOKO', 'https://klikindomaret.com', 7, 5, 'Berkala', false);
-  await insertSource('iBox / Digimap', 'OFFLINE & ONLINE', 'https://ibox.co.id', 5, 3, 'Stabil (SRP)', false);
-  await insertSource('Harco / Mangga Dua', 'TOKO FISIK', '#', 2, 2, 'Kadaluarsa', true);
 }
 
 async function runSeeds() {
@@ -474,24 +459,8 @@ async function runSeeds() {
     INSERT INTO price_radar_logs (watchlist_id, user_id, platform_name, price, notes)
     VALUES 
       ($1, $2, 'Tokopedia Official', 2890000, 'Voucher diskon gajian 8% + cashback 100k GoPay Coins. Rekor termurah!'),
-      ($1, $2, 'Shopee Mall', 3050000, 'Flash sale promo midnight brand Logitech.'),
-      ($1, $2, 'Blibli Official', 3150000, 'Harga promo bundling mouse pad.')
+      ($1, $2, 'Shopee Mall', 3050000, 'Flash sale promo midnight brand Logitech.')
   `, [w1, userId]);
-
-  // Insert Sources
-  const insertSource = async (name, type, url, winRate, logsCount, status, isStale) => {
-    await db.query(`
-      INSERT INTO price_radar_sources (user_id, name, type, url, win_rate, price_logs_count, activity_status, is_stale)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-    `, [userId, name, type, url, winRate, logsCount, status, isStale]);
-  };
-
-  await insertSource('Tokopedia', 'MARKETPLACE', 'https://tokopedia.com', 42, 32, 'Sangat Aktif', false);
-  await insertSource('Shopee', 'MARKETPLACE', 'https://shopee.co.id', 33, 28, 'Aktif', false);
-  await insertSource('Blibli', 'E-COMMERCE', 'https://blibli.com', 18, 14, 'Moderat', false);
-  await insertSource('Klik Indomaret / Alfa', 'GROCERY & TOKO', 'https://klikindomaret.com', 7, 5, 'Berkala', false);
-  await insertSource('iBox / Digimap', 'OFFLINE & ONLINE', 'https://ibox.co.id', 5, 3, 'Stabil (SRP)', false);
-  await insertSource('Harco / Mangga Dua', 'TOKO FISIK', '#', 2, 2, 'Kadaluarsa', true);
 
   console.log('PostgreSQL database seeds completed successfully.');
 }

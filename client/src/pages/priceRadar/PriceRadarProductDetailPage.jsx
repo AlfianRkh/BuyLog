@@ -8,19 +8,17 @@ import {
   TrendingUp,
   PlusCircle,
   Edit,
-  Share2,
   Trash2,
   ExternalLink,
   ShieldCheck,
   Activity,
   BarChart2,
-  Sparkles,
   Store,
-  Clock,
-  Send
+  Clock
 } from 'lucide-react';
 import api from '../../services/api';
 import QuickLogModal from '../../components/priceRadar/QuickLogModal';
+import EditTargetModal from '../../components/priceRadar/EditTargetModal';
 import './PriceRadarPages.css';
 
 const formatRupiah = (num) => {
@@ -36,6 +34,7 @@ export default function PriceRadarProductDetailPage() {
   const [loading, setLoading] = useState(true);
   const [timeRange, setTimeRange] = useState('3 BLN');
   const [quickLogModalOpen, setQuickLogModalOpen] = useState(false);
+  const [editTargetModalOpen, setEditTargetModalOpen] = useState(false);
   const [toastMsg, setToastMsg] = useState(null);
 
   const showToast = (msg) => {
@@ -46,7 +45,7 @@ export default function PriceRadarProductDetailPage() {
   const fetchDetail = async () => {
     try {
       setLoading(true);
-      const res = await api.priceRadar.getProductDetail(slug || 'logitech-g-pro-x-2');
+      const res = await api.priceRadar.getProductDetail(slug);
       setProduct(res.product || res);
     } catch (err) {
       console.error('Error fetching product detail:', err);
@@ -56,21 +55,10 @@ export default function PriceRadarProductDetailPage() {
   };
 
   useEffect(() => {
-    fetchDetail();
+    if (slug) {
+      fetchDetail();
+    }
   }, [slug]);
-
-  const handleShareWA = () => {
-    const titleStr = product?.title || 'Logitech G Pro X 2 Lightspeed';
-    const priceStr = formatRupiah(product?.current_price || 2890000);
-    const targetStr = formatRupiah(product?.target_price || 3000000);
-    const dealText = `🎯 PriceRadar Alert! ${titleStr}\n🔥 ALL-TIME LOW: ${priceStr} (Target ${targetStr})\n📍 Toko: ${product?.store_name || 'Tokopedia Official'}\n⭐ Deal Score: ${product?.deal_score || '9.6'}/10\n🔗 Pantau di PriceRadar`;
-    
-    navigator.clipboard.writeText(dealText).then(() => {
-      showToast("Kartu info deal berhasil disalin ke clipboard! 🚀");
-    }).catch(() => {
-      showToast("Berhasil disiapkan!");
-    });
-  };
 
   const handleDelete = async () => {
     if (confirm("Hapus produk dari radar?")) {
@@ -86,23 +74,100 @@ export default function PriceRadarProductDetailPage() {
     }
   };
 
-  const title = product?.title || 'Logitech G Pro X 2 Lightspeed Wireless';
-  const currentPrice = product?.current_price || 2890000;
-  const targetPrice = product?.target_price || 3000000;
-  const dealScore = product?.deal_score || 9.6;
+  const title = product?.title || 'Memuat Data Produk...';
+  const currentPrice = Number(product?.current_price || 0);
+  const targetPrice = Number(product?.target_price || 0);
+  const minPrice = Number(product?.min_price || currentPrice);
+  const maxPrice = Number(product?.max_price || currentPrice);
+  const dealScore = product?.deal_score || (targetPrice > 0 && currentPrice <= targetPrice ? 9.5 : 7.0);
   const logs = product?.logs || [];
-  const comparison = product?.platformComparison || [
-    { platform: 'Tokopedia Official', price: 2890000, delta: 'BEST DEAL', status: 'Segar', isBest: true, url: 'https://tokopedia.com' },
-    { platform: 'Shopee Mall', price: 3050000, delta: '+Rp 160.000', status: 'Aktif', isBest: false, url: 'https://shopee.co.id' },
-    { platform: 'Blibli Official', price: 3120000, delta: '+Rp 230.000', status: 'Aktif', isBest: false, url: 'https://blibli.com' },
-    { platform: 'GS Shop Mangga Dua', price: 3350000, delta: '+Rp 460.000', status: 'Perlu Cek', isBest: false, url: '#' }
-  ];
+  const storeName = product?.store_name || 'Toko Utama';
+  const isHit = currentPrice <= targetPrice && targetPrice > 0;
+
+  const avgPrice = logs.length > 0
+    ? Math.round(logs.reduce((sum, l) => sum + Number(l.price || 0), 0) / logs.length)
+    : Math.round((minPrice + maxPrice) / 2);
+
+  const priceDiff = targetPrice - currentPrice;
+
+  const comparison = logs.length > 0
+    ? logs.map(l => ({
+        platform: l.platform_name || storeName,
+        price: Number(l.price),
+        delta: Number(l.price) <= currentPrice ? 'BEST DEAL' : `+${formatRupiah(Number(l.price) - currentPrice)}`,
+        isBest: Number(l.price) <= currentPrice,
+        url: product?.url || '#'
+      }))
+    : [
+        { platform: storeName, price: currentPrice, delta: 'BEST DEAL', isBest: true, url: product?.url || '#' }
+      ];
+
+  // Dynamic Chart Points Calculation
+  const chartPoints = React.useMemo(() => {
+    let rawPoints = [];
+    if (logs && logs.length > 0) {
+      const sorted = [...logs].sort((a, b) => 
+        new Date(a.recorded_at || a.created_at || 0) - new Date(b.recorded_at || b.created_at || 0)
+      );
+      rawPoints = sorted.map(l => ({
+        price: Number(l.price || 0),
+        date: new Date(l.recorded_at || l.created_at || Date.now()).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }),
+        platform: l.platform_name || storeName
+      }));
+    }
+
+    if (rawPoints.length === 0) {
+      rawPoints = [
+        { price: maxPrice || currentPrice, date: 'Awal Pemantauan', platform: storeName },
+        { price: currentPrice, date: 'Terkini', platform: storeName }
+      ];
+    } else if (rawPoints.length === 1) {
+      rawPoints = [
+        { price: maxPrice || rawPoints[0].price, date: 'Awal Pemantauan', platform: storeName },
+        ...rawPoints
+      ];
+    }
+
+    const prices = rawPoints.map(p => p.price);
+    if (targetPrice > 0) prices.push(targetPrice);
+
+    const minP = Math.min(...prices);
+    const maxP = Math.max(...prices);
+    const range = (maxP - minP) || maxP || 1;
+    const padding = range * 0.15;
+    const minY = Math.max(0, minP - padding);
+    const maxY = maxP + padding;
+
+    const points = rawPoints.map((pt, idx) => {
+      const x = rawPoints.length === 1 ? 450 : Math.round(40 + (idx / (rawPoints.length - 1)) * 820);
+      const normalizedRatio = (pt.price - minY) / (maxY - minY || 1);
+      const y = Math.round(270 - normalizedRatio * 220);
+      return { ...pt, x, y };
+    });
+
+    const targetY = targetPrice > 0 
+      ? Math.round(270 - ((targetPrice - minY) / (maxY - minY || 1)) * 220)
+      : null;
+
+    const polylineStr = points.map(p => `${p.x},${p.y}`).join(' ');
+    const polygonStr = `${points[0].x},280 ` + polylineStr + ` ${points[points.length - 1].x},280`;
+
+    return { points, polylineStr, polygonStr, targetY };
+  }, [logs, currentPrice, targetPrice, maxPrice, storeName]);
+
+  if (loading && !product) {
+    return (
+      <div className="pr-container py-12 text-center text-slate-500 font-semibold">
+        Memuat detail intelijen produk...
+      </div>
+    );
+  }
 
   return (
     <div className="pr-container">
       {/* Toast Notification */}
       {toastMsg && (
-        <div className="fixed top-20 right-6 z-50 bg-slate-900 text-white px-4 py-3 rounded-xl shadow-2xl flex items-center gap-2 animate-bounce border border-slate-700 text-sm font-semibold">
+        <div className="fixed top-20 right-6 z-50 bg-slate-900 text-white px-4 py-3 rounded-xl shadow-2xl flex items-center gap-2 border border-slate-700 text-sm font-semibold">
           <CheckCircle2 className="w-5 h-5 text-emerald-400" />
           <span>{toastMsg}</span>
         </div>
@@ -116,7 +181,7 @@ export default function PriceRadarProductDetailPage() {
             <span>Kembali ke Watchlist</span>
           </Link>
           <span className="text-slate-300">/</span>
-          <span className="text-slate-500 font-medium">{product?.category || 'Elektronik'}</span>
+          <span className="text-slate-500 font-medium">{product?.category || 'Umum'}</span>
           <span className="text-slate-300">/</span>
           <span className="text-slate-900 font-bold tracking-tight">{title}</span>
         </div>
@@ -124,15 +189,25 @@ export default function PriceRadarProductDetailPage() {
         <div className="flex flex-wrap items-center gap-2">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 border border-blue-200">
             <span className="w-2 h-2 rounded-full bg-blue-600 animate-pulse"></span>
-            <span className="font-bold text-xs text-blue-700 uppercase tracking-wider">Sedang Dipantau</span>
+            <span className="font-bold text-xs text-blue-700 uppercase tracking-wider">
+              {product?.status === 'watching' ? 'Sedang Dipantau' : product?.status === 'hit' ? 'Target Hit' : 'Aktif'}
+            </span>
           </div>
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200">
-            <Target className="w-3.5 h-3.5 text-emerald-600" />
-            <span className="font-bold text-xs text-emerald-700 uppercase tracking-wider">TARGET HIT (-3.7%)</span>
-          </div>
-          <div className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-rose-50 border border-rose-200">
-            <span className="font-bold text-xs text-rose-700 uppercase tracking-wider">PRIORITY: HIGH</span>
-          </div>
+          {isHit ? (
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200">
+              <Target className="w-3.5 h-3.5 text-emerald-600" />
+              <span className="font-bold text-xs text-emerald-700 uppercase tracking-wider">
+                TARGET HIT ({formatRupiah(Math.abs(priceDiff))})
+              </span>
+            </div>
+          ) : (
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50 border border-amber-200">
+              <Activity className="w-3.5 h-3.5 text-amber-600" />
+              <span className="font-bold text-xs text-amber-700 uppercase tracking-wider">
+                MEMANTAU TARGET
+              </span>
+            </div>
+          )}
         </div>
       </div>
 
@@ -141,19 +216,26 @@ export default function PriceRadarProductDetailPage() {
         <div className="flex flex-col xl:flex-row gap-6 justify-between items-start xl:items-center">
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5 min-w-0 flex-1">
             <div className="relative w-24 h-24 rounded-2xl overflow-hidden bg-slate-100 border border-slate-200 shrink-0 flex items-center justify-center p-2">
-              <img className="w-full h-full object-contain rounded-xl" src={product?.image_url || "https://images.unsplash.com/photo-1546435770-a3e426bf472b?w=400&auto=format&fit=crop&q=80"} alt="Product Thumbnail"/>
+              <img
+                className="w-full h-full object-contain rounded-xl"
+                src={product?.image_url || "https://images.unsplash.com/photo-1546435770-a3e426bf472b?w=400&auto=format&fit=crop&q=80"}
+                alt={title}
+              />
             </div>
             <div className="flex flex-col min-w-0">
               <div className="flex items-center gap-2 mb-1 flex-wrap">
-                <span className="px-2.5 py-0.5 rounded-md bg-slate-100 text-slate-600 font-bold text-xs uppercase border border-slate-200">{product?.brand || 'Logitech G'}</span>
-                <span className="text-xs text-slate-400 font-medium">SKU: LOG-GPX2-BLK</span>
-                <span className="text-xs text-blue-600 font-semibold">Graphene 50mm Driver</span>
+                <span className="px-2.5 py-0.5 rounded-md bg-slate-100 text-slate-600 font-bold text-xs uppercase border border-slate-200">
+                  {product?.brand || 'Umum'}
+                </span>
+                {product?.edition && (
+                  <span className="text-xs text-blue-600 font-semibold">{product.edition}</span>
+                )}
               </div>
               <h1 className="text-xl md:text-2xl font-extrabold text-slate-900 tracking-tight truncate max-w-2xl">
                 {title}
               </h1>
               <p className="text-xs text-slate-500 mt-1">
-                Wireless Gaming Headset with Bluetooth, 3.5mm, and DTS Headphone:X 2.0 Surround Sound.
+                {product?.notes || 'Tidak ada deskripsi tambahan.'}
               </p>
             </div>
           </div>
@@ -167,25 +249,11 @@ export default function PriceRadarProductDetailPage() {
               <span>Log Harga</span>
             </button>
             <button
-              onClick={() => showToast("Mode edit target dibuka!")}
+              onClick={() => setEditTargetModalOpen(true)}
               className="pr-btn-secondary"
             >
               <Edit className="w-4 h-4" />
               <span>Edit Target</span>
-            </button>
-            <button
-              onClick={() => showToast("Ditandai sudah dibeli!")}
-              className="pr-btn-secondary"
-            >
-              <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-              <span>Tandai Beli</span>
-            </button>
-            <button
-              onClick={handleShareWA}
-              className="pr-btn-secondary"
-            >
-              <Share2 className="w-4 h-4" />
-              <span>Bagikan</span>
             </button>
             <button
               onClick={handleDelete}
@@ -213,19 +281,23 @@ export default function PriceRadarProductDetailPage() {
               <span className="text-xs text-slate-500 font-medium">Status Ambang Batas:</span>
               <span className="text-xs text-emerald-700 font-bold flex items-center gap-1">
                 <TrendingDown className="w-4 h-4 text-emerald-600" />
-                TERCAPAI! {formatRupiah(currentPrice)}
+                {isHit ? `TERCAPAI! ${formatRupiah(currentPrice)}` : `BELUM TARGET (${formatRupiah(currentPrice)})`}
               </span>
-              <span className="text-xs bg-emerald-600 text-white px-2 py-0.5 rounded-full font-bold">-110.000</span>
+              <span className={`text-xs px-2 py-0.5 rounded-full font-bold text-white ${isHit ? 'bg-emerald-600' : 'bg-amber-600'}`}>
+                {isHit ? `Hemat ${formatRupiah(Math.abs(priceDiff))}` : `+${formatRupiah(Math.abs(priceDiff))}`}
+              </span>
             </div>
-            <a
-              className="pr-btn-primary bg-emerald-600 hover:bg-emerald-700 border-none shadow-sm"
-              href="https://tokopedia.com"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <span>Sikat Tokopedia</span>
-              <ExternalLink className="w-3.5 h-3.5" />
-            </a>
+            {product?.url && (
+              <a
+                className="pr-btn-primary bg-emerald-600 hover:bg-emerald-700 border-none shadow-sm"
+                href={product.url}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <span>Buka {storeName}</span>
+                <ExternalLink className="w-3.5 h-3.5" />
+              </a>
+            )}
           </div>
         </div>
       </div>
@@ -235,25 +307,27 @@ export default function PriceRadarProductDetailPage() {
         <div className="pr-kpi-card border-emerald-200 bg-emerald-50/20">
           <div className="pr-kpi-header">
             <span className="pr-kpi-label text-emerald-700">Radar Deal Index</span>
-            <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold">ATL RECORD</span>
+            <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold">
+              {product?.is_atl ? 'ALL-TIME LOW' : 'STATUS DEAL'}
+            </span>
           </div>
           <div className="flex items-center gap-3 my-1">
             <div className="relative w-14 h-14 shrink-0 flex items-center justify-center">
               <svg className="w-full h-full -rotate-90" viewBox="0 0 36 36">
                 <path className="text-emerald-100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" strokeWidth="3.5"></path>
-                <path className="text-emerald-600" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" strokeDasharray="96, 100" strokeLinecap="round" strokeWidth="3.5"></path>
+                <path className="text-emerald-600" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" strokeDasharray={`${(dealScore / 10) * 100}, 100`} strokeLinecap="round" strokeWidth="3.5"></path>
               </svg>
               <div className="absolute inset-0 flex items-center justify-center text-sm font-extrabold text-emerald-700">
                 {dealScore}
               </div>
             </div>
             <div className="flex flex-col min-w-0">
-              <span className="font-bold text-sm text-slate-900">Strong Buy Signal</span>
+              <span className="font-bold text-sm text-slate-900">{dealScore >= 8.0 ? 'Strong Buy Signal' : 'Monitoring Signal'}</span>
               <span className="text-xs text-emerald-600 font-semibold">Skor {dealScore} / 10.0</span>
             </div>
           </div>
           <div className="pr-kpi-footer border-emerald-100 text-slate-600">
-            <span>🔥 <strong className="text-emerald-700">ALL-TIME LOW</strong> sejak pantauan awal</span>
+            <span>🔥 {isHit ? 'Penawaran Sangat Bagus' : 'Menunggu Penurunan Harga'}</span>
           </div>
         </div>
 
@@ -265,14 +339,14 @@ export default function PriceRadarProductDetailPage() {
             </div>
           </div>
           <div className="my-1">
-            <div className="pr-kpi-value text-emerald-600">Rp 2.890.000</div>
+            <div className="pr-kpi-value text-emerald-600">{formatRupiah(minPrice)}</div>
             <div className="text-xs text-slate-500 mt-1">
-              <span className="font-semibold text-slate-700">Tokopedia Official</span> · 3 Okt 2026
+              <span className="font-semibold text-slate-700">{storeName}</span>
             </div>
           </div>
           <div className="pr-kpi-footer">
-            <span>Diskon vs Rilis:</span>
-            <span className="text-emerald-600 font-bold">-17.4% (-Rp 609k)</span>
+            <span>Selisih vs Target:</span>
+            <span className="text-emerald-600 font-bold">{formatRupiah(targetPrice - minPrice)}</span>
           </div>
         </div>
 
@@ -284,14 +358,14 @@ export default function PriceRadarProductDetailPage() {
             </div>
           </div>
           <div className="my-1">
-            <div className="pr-kpi-value text-slate-900">Rp 3.499.000</div>
+            <div className="pr-kpi-value text-slate-900">{formatRupiah(maxPrice)}</div>
             <div className="text-xs text-slate-500 mt-1">
-              <span className="font-semibold text-slate-700">Shopee Mall</span> · 1 Agu 2026
+              <span className="font-semibold text-slate-700">{storeName}</span>
             </div>
           </div>
           <div className="pr-kpi-footer">
             <span>Selisih vs Terendah:</span>
-            <span className="text-rose-600 font-bold">+Rp 609.000</span>
+            <span className="text-rose-600 font-bold">+{formatRupiah(maxPrice - minPrice)}</span>
           </div>
         </div>
 
@@ -303,14 +377,18 @@ export default function PriceRadarProductDetailPage() {
             </div>
           </div>
           <div className="my-1">
-            <div className="pr-kpi-value text-blue-600">Rp 3.125.000</div>
+            <div className="pr-kpi-value text-blue-600">{formatRupiah(avgPrice)}</div>
             <div className="text-xs text-slate-500 mt-1">
-              Dihitung dari {logs.length || 12} log harga
+              Dihitung dari {logs.length} log harga
             </div>
           </div>
           <div className="pr-kpi-footer">
             <span>Posisi Saat Ini:</span>
-            <span className="text-emerald-600 font-bold">7.5% di Bawah Rata²</span>
+            <span className="text-emerald-600 font-bold">
+              {currentPrice <= avgPrice
+                ? `${formatRupiah(avgPrice - currentPrice)} di Bawah Rata²`
+                : `${formatRupiah(currentPrice - avgPrice)} di Atas Rata²`}
+            </span>
           </div>
         </div>
       </div>
@@ -323,7 +401,7 @@ export default function PriceRadarProductDetailPage() {
               <Activity className="w-5 h-5 text-blue-600" />
               <h2 className="font-bold text-lg text-slate-900">Tren Multi-Platform & Proyeksi Delta</h2>
             </div>
-            <span className="text-xs text-slate-500">Analisis komparasi Tokopedia, Shopee, Blibli & Toko Retail Offline</span>
+            <span className="text-xs text-slate-500">Analisis komparasi pergerakan harga produk</span>
           </div>
 
           <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200">
@@ -345,8 +423,8 @@ export default function PriceRadarProductDetailPage() {
           <div className="pl-4 pr-4 pt-2 pb-4 w-full">
             <svg className="w-full h-64 sm:h-72 overflow-visible" preserveAspectRatio="none" viewBox="0 0 900 320">
               <defs>
-                <linearGradient id="tokopediaGrad" x1="0" x2="0" y1="0" y2="1">
-                  <stop offset="0%" stopColor="#10B981" stopOpacity="0.2"></stop>
+                <linearGradient id="priceGrad" x1="0" x2="0" y1="0" y2="1">
+                  <stop offset="0%" stopColor="#10B981" stopOpacity="0.25"></stop>
                   <stop offset="100%" stopColor="#10B981" stopOpacity="0.0"></stop>
                 </linearGradient>
               </defs>
@@ -355,33 +433,51 @@ export default function PriceRadarProductDetailPage() {
               <line stroke="#E2E8F0" strokeDasharray="4 4" strokeWidth="1" x1="0" x2="900" y1="240" y2="240"></line>
 
               {/* Target Line */}
-              <line stroke="#2563EB" strokeDasharray="6 4" strokeWidth="1.5" x1="0" x2="900" y1="180" y2="180"></line>
-              
-              {/* Retail Offline */}
-              <polyline fill="none" points="0,60 120,60 250,75 400,75 550,85 700,90 900,90" stroke="#94A3B8" strokeWidth="2"></polyline>
-              {/* Blibli */}
-              <polyline fill="none" points="0,110 150,110 280,130 420,130 580,145 720,150 900,145" stroke="#0284C7" strokeWidth="2.5"></polyline>
-              {/* Shopee */}
-              <polyline fill="none" points="0,30 140,55 290,95 430,120 600,135 740,165 900,165" stroke="#F43F5E" strokeWidth="2.5"></polyline>
-              {/* Tokopedia */}
-              <polygon fill="url(#tokopediaGrad)" points="0,75 140,75 280,110 420,125 560,165 720,205 900,240 900,320 0,320"></polygon>
-              <polyline fill="none" points="0,75 140,75 280,110 420,125 560,165 720,205 900,240" stroke="#10B981" strokeWidth="3"></polyline>
+              {chartPoints.targetY !== null && chartPoints.targetY >= 20 && chartPoints.targetY <= 300 && (
+                <g>
+                  <line stroke="#2563EB" strokeDasharray="6 4" strokeWidth="1.5" x1="0" x2="900" y1={chartPoints.targetY} y2={chartPoints.targetY}></line>
+                  <text x="12" y={chartPoints.targetY - 6} fill="#2563EB" fontSize="11" fontWeight="bold">
+                    Target: {formatRupiah(targetPrice)}
+                  </text>
+                </g>
+              )}
 
-              <circle cx="140" cy="75" fill="#FFFFFF" r="4" stroke="#10B981" strokeWidth="2"></circle>
-              <circle cx="280" cy="110" fill="#FFFFFF" r="4" stroke="#10B981" strokeWidth="2"></circle>
-              <circle cx="420" cy="125" fill="#FFFFFF" r="4" stroke="#10B981" strokeWidth="2"></circle>
-              <circle cx="560" cy="165" fill="#FFFFFF" r="4" stroke="#10B981" strokeWidth="2"></circle>
-              <circle cx="720" cy="205" fill="#FFFFFF" r="4" stroke="#10B981" strokeWidth="2"></circle>
-              <circle cx="900" cy="240" fill="#10B981" r="5" stroke="#FFFFFF" strokeWidth="2"></circle>
+              {/* Price Line & Fill */}
+              <polygon fill="url(#priceGrad)" points={chartPoints.polygonStr}></polygon>
+              <polyline fill="none" points={chartPoints.polylineStr} stroke="#10B981" strokeWidth="3"></polyline>
+
+              {/* Data Points */}
+              {chartPoints.points.map((pt, idx) => (
+                <g key={idx}>
+                  <circle
+                    cx={pt.x}
+                    cy={pt.y}
+                    r={idx === chartPoints.points.length - 1 ? "6" : "4"}
+                    fill={idx === chartPoints.points.length - 1 ? "#10B981" : "#FFFFFF"}
+                    stroke={idx === chartPoints.points.length - 1 ? "#FFFFFF" : "#10B981"}
+                    strokeWidth="2"
+                  />
+                  <text
+                    x={pt.x}
+                    y={pt.y - 12}
+                    textAnchor="middle"
+                    fill="#0F172A"
+                    fontSize="11"
+                    fontWeight="bold"
+                  >
+                    {formatRupiah(pt.price)}
+                  </text>
+                </g>
+              ))}
             </svg>
 
+            {/* X-Axis Dates */}
             <div className="flex justify-between text-xs text-slate-400 mt-2 pt-2 border-t border-slate-200 font-medium">
-              <span>1 Agu 2026</span>
-              <span>15 Agu</span>
-              <span>1 Sep 2026</span>
-              <span>15 Sep</span>
-              <span>25 Sep</span>
-              <span className="text-emerald-600 font-bold">Hari ini (3 Okt)</span>
+              {chartPoints.points.map((pt, idx) => (
+                <span key={idx} className={idx === chartPoints.points.length - 1 ? "text-emerald-600 font-bold" : ""}>
+                  {pt.date}
+                </span>
+              ))}
             </div>
           </div>
         </div>
@@ -395,7 +491,9 @@ export default function PriceRadarProductDetailPage() {
               <Store className="w-5 h-5 text-emerald-600" />
               <h3 className="font-bold text-base text-slate-900">Perbandingan Harga Antar-Platform</h3>
             </div>
-            <span className="px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 text-xs font-semibold">4 Sumber Terpantau</span>
+            <span className="px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 text-xs font-semibold">
+              {comparison.length} Sumber Terpantau
+            </span>
           </div>
 
           <div className="pr-table-wrapper">
@@ -430,15 +528,19 @@ export default function PriceRadarProductDetailPage() {
                       )}
                     </td>
                     <td className="text-right">
-                      <a
-                        href={item.url || 'https://tokopedia.com'}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-slate-900 text-white font-semibold text-xs hover:bg-slate-800 transition-colors"
-                      >
-                        <span>Kunjungi</span>
-                        <ExternalLink className="w-3.5 h-3.5" />
-                      </a>
+                      {item.url && item.url !== '#' ? (
+                        <a
+                          href={item.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-slate-900 text-white font-semibold text-xs hover:bg-slate-800 transition-colors"
+                        >
+                          <span>Kunjungi</span>
+                          <ExternalLink className="w-3.5 h-3.5" />
+                        </a>
+                      ) : (
+                        <span className="text-xs text-slate-400 font-medium">Internal Log</span>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -455,44 +557,33 @@ export default function PriceRadarProductDetailPage() {
                 <Clock className="w-5 h-5 text-blue-600" />
                 <h3 className="font-bold text-base text-slate-900">Riwayat Log & Bukti</h3>
               </div>
-              <span className="text-xs text-slate-500 font-medium">Total {logs.length || 3} Log</span>
+              <span className="text-xs text-slate-500 font-medium">Total {logs.length} Log</span>
             </div>
 
             <div className="flex flex-col gap-3">
-              <div className="p-3.5 rounded-xl bg-emerald-50/50 border border-emerald-100 flex flex-col gap-1">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-emerald-600"></span>
-                    <span className="text-xs text-emerald-800 font-bold">3 Okt 2026 · Tokopedia</span>
-                  </div>
-                  <span className="text-xs font-extrabold text-emerald-700">Rp 2.890.000</span>
+              {logs.length === 0 ? (
+                <div className="p-6 text-center text-xs text-slate-500 bg-slate-50 rounded-xl border border-dashed border-slate-200">
+                  Belum ada riwayat log harga tercatat. Klik tombol <strong>Log Harga</strong> untuk menambahkan catatan harga terkini.
                 </div>
-                <p className="text-xs text-slate-600 mt-1">
-                  Voucher diskon gajian 8% + cashback 100k GoPay Coins. Rekor termurah!
-                </p>
-              </div>
-
-              <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 flex flex-col gap-1">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-slate-400"></span>
-                    <span className="text-xs text-slate-800 font-bold">28 Sep 2026 · Shopee</span>
+              ) : (
+                logs.map((log, idx) => (
+                  <div key={log.id || idx} className="p-3.5 rounded-xl bg-emerald-50/50 border border-emerald-100 flex flex-col gap-1">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-emerald-600"></span>
+                        <span className="text-xs text-emerald-800 font-bold">
+                          {new Date(log.recorded_at || log.created_at || Date.now()).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })} · {log.platform_name || storeName}
+                        </span>
+                      </div>
+                      <span className="text-xs font-extrabold text-emerald-700">{formatRupiah(log.price)}</span>
+                    </div>
+                    {log.notes && (
+                      <p className="text-xs text-slate-600 mt-1">{log.notes}</p>
+                    )}
                   </div>
-                  <span className="text-xs font-bold text-slate-900">Rp 3.050.000</span>
-                </div>
-                <p className="text-xs text-slate-500 mt-1">Flash sale promo midnight brand Logitech.</p>
-              </div>
+                ))
+              )}
             </div>
-          </div>
-
-          <div className="mt-6 pt-4 border-t border-slate-100">
-            <button
-              onClick={handleShareWA}
-              className="w-full pr-btn-secondary justify-center py-2.5"
-            >
-              <Send className="w-4 h-4 text-emerald-600" />
-              <span>Salin Kartu Info Deal untuk WhatsApp</span>
-            </button>
           </div>
         </div>
       </div>
@@ -501,6 +592,13 @@ export default function PriceRadarProductDetailPage() {
         isOpen={quickLogModalOpen}
         onClose={() => setQuickLogModalOpen(false)}
         initialProductId={product?.id}
+        onSuccess={(msg) => { showToast(msg); fetchDetail(); }}
+      />
+
+      <EditTargetModal
+        isOpen={editTargetModalOpen}
+        onClose={() => setEditTargetModalOpen(false)}
+        product={product}
         onSuccess={(msg) => { showToast(msg); fetchDetail(); }}
       />
     </div>

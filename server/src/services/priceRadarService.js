@@ -11,33 +11,51 @@ function slugify(text) {
 }
 
 async function getDashboard(userId) {
+  // Seed default watchlist items if 0 exist for user in PostgreSQL database
+  const countAll = await db.query(
+    `SELECT COUNT(*) as count FROM price_radar_watchlist WHERE user_id = $1 OR user_id IS NULL`,
+    [userId]
+  );
+
+  // if (parseInt(countAll.rows[0]?.count || 0) === 0) {
+  //   await db.query(`
+  //     INSERT INTO price_radar_watchlist 
+  //       (user_id, title, slug, brand, category, image_url, current_price, target_price, store_name, deal_score, status, is_atl, min_price, max_price, notes, url)
+  //     VALUES
+  //       ($1, 'Logitech G Pro X 2 Lightspeed', 'logitech-g-pro-x-2', 'Logitech', 'Elektronik', 'https://images.unsplash.com/photo-1587829741301-dc798b83add3?w=500&auto=format&fit=crop&q=80', 2890000, 3000000, 'Tokopedia Official', 9.6, 'hit', true, 2890000, 3200000, 'All Time Low deal', 'https://tokopedia.com'),
+  //       ($1, 'Bimoli Minyak Goreng 2L (Isi 2)', 'bimoli-2l-isi-2', 'Bimoli', 'Groceries', 'https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=500&auto=format&fit=crop&q=80', 68500, 72000, 'Indomaret Klik', 8.8, 'hit', false, 68500, 75000, 'Promo bulanan', 'https://klikindomaret.com'),
+  //       ($1, 'Sony WH-1000XM5 ANC', 'sony-wh-1000xm5', 'Sony', 'Elektronik', 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500&auto=format&fit=crop&q=80', 4599000, 4600000, 'Shopee Mall', 9.2, 'hit', false, 4599000, 4999000, 'Hit target', 'https://shopee.co.id'),
+  //       ($1, 'Samsung Galaxy S24 Ultra 512GB', 'samsung-s24-ultra', 'Samsung', 'Elektronik', 'https://images.unsplash.com/photo-1510557880182-3d4d3cba35a5?w=500&auto=format&fit=crop&q=80', 18900000, 17500000, 'Tokopedia Official', 6.8, 'watching', false, 18500000, 21990000, 'Menunggu diskon 11.11', 'https://tokopedia.com')
+  //   `, [userId]);
+  // }
+
   // Top KPIs
   const totalWatchRes = await db.query(
-    `SELECT COUNT(*) as count FROM price_radar_watchlist WHERE user_id = $1 AND status != 'canceled'`,
+    `SELECT COUNT(*) as count FROM price_radar_watchlist WHERE (user_id = $1 OR user_id IS NULL) AND status != 'canceled'`,
     [userId]
   );
   const targetHitsRes = await db.query(
-    `SELECT COUNT(*) as count FROM price_radar_watchlist WHERE user_id = $1 AND status = 'hit'`,
+    `SELECT COUNT(*) as count FROM price_radar_watchlist WHERE (user_id = $1 OR user_id IS NULL) AND status = 'hit'`,
     [userId]
   );
   const avgScoreRes = await db.query(
-    `SELECT AVG(deal_score) as avg_score FROM price_radar_watchlist WHERE user_id = $1 AND status != 'canceled'`,
+    `SELECT AVG(deal_score) as avg_score FROM price_radar_watchlist WHERE (user_id = $1 OR user_id IS NULL) AND status != 'canceled'`,
     [userId]
   );
   const potentialSavingsRes = await db.query(
-    `SELECT SUM(GREATEST(0, target_price - current_price)) as savings FROM price_radar_watchlist WHERE user_id = $1 AND status = 'hit'`,
+    `SELECT SUM(GREATEST(0, target_price - current_price)) as savings FROM price_radar_watchlist WHERE (user_id = $1 OR user_id IS NULL) AND status = 'hit'`,
     [userId]
   );
 
   // Target Hit Products
   const targetHitProductsRes = await db.query(
-    `SELECT * FROM price_radar_watchlist WHERE user_id = $1 AND status = 'hit' ORDER BY updated_at DESC LIMIT 3`,
+    `SELECT * FROM price_radar_watchlist WHERE (user_id = $1 OR user_id IS NULL) AND status = 'hit' ORDER BY updated_at DESC LIMIT 3`,
     [userId]
   );
 
   // Deals Bagus Hari Ini (Score >= 7.5)
   const topDealsRes = await db.query(
-    `SELECT * FROM price_radar_watchlist WHERE user_id = $1 ORDER BY deal_score DESC LIMIT 3`,
+    `SELECT * FROM price_radar_watchlist WHERE (user_id = $1 OR user_id IS NULL) ORDER BY deal_score DESC LIMIT 3`,
     [userId]
   );
 
@@ -179,7 +197,7 @@ async function updateWatchlist(userId, id, data) {
   const { title, brand, category, edition, target_price, current_price, status, notes } = data;
   const currP = parseFloat(current_price);
   const targP = parseFloat(target_price);
-  
+
   let setClause = [];
   let params = [userId, id];
 
@@ -190,8 +208,8 @@ async function updateWatchlist(userId, id, data) {
   if (notes !== undefined) { params.push(notes); setClause.push(`notes = $${params.length}`); }
 
   if (!isNaN(targP)) { params.push(targP); setClause.push(`target_price = $${params.length}`); }
-  if (!isNaN(currP)) { 
-    params.push(currP); setClause.push(`current_price = $${params.length}`); 
+  if (!isNaN(currP)) {
+    params.push(currP); setClause.push(`current_price = $${params.length}`);
     const newStatus = currP <= (targP || 0) ? 'hit' : 'watching';
     params.push(newStatus); setClause.push(`status = $${params.length}`);
   } else if (status) {
@@ -255,7 +273,7 @@ async function recordLog(userId, { watchlist_id, platform_name, price, notes, pr
 }
 
 async function getSources(userId, categoryFilter) {
-  let query = `SELECT * FROM price_radar_sources WHERE user_id = $1`;
+  let query = `SELECT * FROM price_radar_sources WHERE (user_id = $1 OR user_id IS NULL)`;
   const params = [userId];
 
   if (categoryFilter && categoryFilter !== 'all') {
@@ -263,7 +281,7 @@ async function getSources(userId, categoryFilter) {
     query += ` AND type = $${params.length}`;
   }
 
-  query += ` ORDER BY win_rate DESC`;
+  query += ` ORDER BY id ASC`;
   const res = await db.query(query, params);
   return res.rows;
 }
@@ -279,25 +297,97 @@ async function createSource(userId, data) {
   return res.rows[0];
 }
 
+async function updateSource(userId, id, data) {
+  const { name, type, url } = data;
+  const res = await db.query(
+    `UPDATE price_radar_sources
+     SET name = COALESCE($1, name),
+         type = COALESCE($2, type),
+         url = COALESCE($3, url)
+     WHERE id = $4 AND (user_id = $5 OR user_id IS NULL)
+     RETURNING *`,
+    [name, type, url, id, userId]
+  );
+  return res.rows[0];
+}
+
 async function getStats(userId, timeFilter) {
+  let dateClause = '';
+  if (timeFilter) {
+    if (/^\d{4}$/.test(timeFilter)) {
+      dateClause = ` AND EXTRACT(YEAR FROM updated_at) = ${parseInt(timeFilter)}`;
+    } else if (timeFilter === 'year') {
+      dateClause = ` AND EXTRACT(YEAR FROM updated_at) = EXTRACT(YEAR FROM CURRENT_DATE)`;
+    } else if (timeFilter === '3m') {
+      dateClause = ` AND updated_at >= CURRENT_DATE - INTERVAL '3 months'`;
+    } else if (timeFilter === '1m') {
+      dateClause = ` AND updated_at >= CURRENT_DATE - INTERVAL '1 month'`;
+    }
+  }
+
   const totalSavingsRes = await db.query(
-    `SELECT SUM(GREATEST(0, max_price - current_price)) as realized_savings FROM price_radar_watchlist WHERE user_id = $1 AND status = 'hit'`,
+    `SELECT SUM(GREATEST(0, max_price - current_price)) as realized_savings FROM price_radar_watchlist WHERE user_id = $1 AND status = 'hit'${dateClause}`,
     [userId]
   );
   const targetAchievedRes = await db.query(
-    `SELECT COUNT(*) as hit_count, (SELECT COUNT(*) FROM price_radar_watchlist WHERE user_id = $1) as total_count FROM price_radar_watchlist WHERE user_id = $1 AND status = 'hit'`,
+    `SELECT COUNT(*) as hit_count, (SELECT COUNT(*) FROM price_radar_watchlist WHERE user_id = $1${dateClause}) as total_count FROM price_radar_watchlist WHERE user_id = $1 AND status = 'hit'${dateClause}`,
     [userId]
   );
   const avgScoreRes = await db.query(
-    `SELECT AVG(deal_score) as avg_score FROM price_radar_watchlist WHERE user_id = $1`,
+    `SELECT AVG(deal_score) as avg_score FROM price_radar_watchlist WHERE user_id = $1${dateClause}`,
     [userId]
   );
 
+  const categoryBreakdownRes = await db.query(
+    `SELECT 
+       COALESCE(NULLIF(category, ''), 'Lainnya') as category,
+       SUM(GREATEST(0, max_price - current_price)) as savings,
+       COUNT(*) as count
+     FROM price_radar_watchlist 
+     WHERE user_id = $1${dateClause}
+     GROUP BY category
+     ORDER BY savings DESC`,
+    [userId]
+  );
+
+  const realizedSavings = parseInt(totalSavingsRes.rows[0]?.realized_savings || 0);
+  const targetHitCount = parseInt(targetAchievedRes.rows[0]?.hit_count || 0);
+  const totalCount = parseInt(targetAchievedRes.rows[0]?.total_count || 0);
+  const avgDealScoreVal = parseFloat(avgScoreRes.rows[0]?.avg_score || 0);
+  const savingsVelocity = Math.round(realizedSavings / 12);
+  const yearlyEstimate = savingsVelocity * 12;
+
+  const catTotalSavings = categoryBreakdownRes.rows.reduce((sum, row) => sum + parseInt(row.savings || 0), 0);
+  const categoryBreakdown = categoryBreakdownRes.rows.map(row => {
+    const savings = parseInt(row.savings || 0);
+    const percentage = catTotalSavings > 0 ? Math.round((savings / catTotalSavings) * 100) : 0;
+    return {
+      category: row.category,
+      savings,
+      percentage
+    };
+  });
+
+  const impulseRestraintPercent = totalCount > 0 ? Math.round((targetHitCount / totalCount) * 100) : 0;
+  const disciplineScore = Math.min(100, Math.round(avgDealScoreVal * 10));
+
+  let hunterLevel = "BEGINNER HUNTER";
+  if (disciplineScore >= 80) hunterLevel = "PRO HUNTER LEVEL 4";
+  else if (disciplineScore >= 60) hunterLevel = "ADVANCED HUNTER LEVEL 3";
+  else if (disciplineScore >= 40) hunterLevel = "HUNTER LEVEL 2";
+  else if (disciplineScore > 0) hunterLevel = "NOVICE HUNTER LEVEL 1";
+
   return {
-    realizedSavings: parseInt(totalSavingsRes.rows[0]?.realized_savings || 2850000),
-    targetHitCount: parseInt(targetAchievedRes.rows[0]?.hit_count || 8),
-    totalCount: parseInt(targetAchievedRes.rows[0]?.total_count || 12),
-    avgDealScore: parseFloat(avgScoreRes.rows[0]?.avg_score || 8.4).toFixed(1)
+    realizedSavings,
+    targetHitCount,
+    totalCount,
+    avgDealScore: avgDealScoreVal.toFixed(1),
+    savingsVelocity,
+    yearlyEstimate,
+    categoryBreakdown,
+    impulseRestraintPercent,
+    disciplineScore,
+    hunterLevel
   };
 }
 
@@ -311,5 +401,6 @@ module.exports = {
   recordLog,
   getSources,
   createSource,
+  updateSource,
   getStats
 };

@@ -6,11 +6,49 @@ export default function AddWatchlistModal({ isOpen, onClose, onSuccess }) {
   const [title, setTitle] = useState('');
   const [brand, setBrand] = useState('');
   const [category, setCategory] = useState('Elektronik');
+  const [dbCategories, setDbCategories] = useState([]);
   const [targetPrice, setTargetPrice] = useState('');
   const [currentPrice, setCurrentPrice] = useState('');
   const [url, setUrl] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+
+  const [isAddingNewCat, setIsAddingNewCat] = useState(false);
+  const [newCatName, setNewCatName] = useState('');
+
+  const handleAddCategory = async () => {
+    if (!newCatName.trim()) return;
+    try {
+      const res = await api.priceRadar.createCategory({ name: newCatName.trim() });
+      if (res.category) {
+        setDbCategories(prev => [...prev, res.category]);
+        setCategory(res.category.name);
+        setNewCatName('');
+        setIsAddingNewCat(false);
+      }
+    } catch (err) {
+      console.error('Failed creating category:', err);
+    }
+  };
+
+  React.useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const res = await api.priceRadar.getCategories();
+        const catList = res?.categories || [];
+        if (catList.length > 0) {
+          setDbCategories(catList);
+          setCategory(catList[0].name);
+        }
+      } catch (err) {
+        console.error('Failed fetching categories for Watchlist modal:', err);
+      }
+    };
+
+    if (isOpen) {
+      fetchCategories();
+    }
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -84,18 +122,58 @@ export default function AddWatchlistModal({ isOpen, onClose, onSuccess }) {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">Kategori</label>
-              <select
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                className="w-full bg-white text-slate-900 font-semibold text-sm px-3.5 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                style={{ color: '#0f172a', backgroundColor: '#ffffff' }}
-              >
-                <option value="Elektronik" style={{ color: '#0f172a', backgroundColor: '#ffffff' }}>Elektronik & Gadget</option>
-                <option value="Groceries" style={{ color: '#0f172a', backgroundColor: '#ffffff' }}>Groceries</option>
-                <option value="Fashion & Sepatu" style={{ color: '#0f172a', backgroundColor: '#ffffff' }}>Fashion & Sepatu</option>
-                <option value="Rumah Tangga" style={{ color: '#0f172a', backgroundColor: '#ffffff' }}>Rumah Tangga</option>
-              </select>
+              <div className="flex justify-between items-center mb-1">
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-600">Kategori</label>
+                <button
+                  type="button"
+                  onClick={() => setIsAddingNewCat(!isAddingNewCat)}
+                  className="text-xs text-blue-600 hover:text-blue-800 font-semibold cursor-pointer"
+                >
+                  {isAddingNewCat ? '← Pilih Kategori' : '+ Tambah Baru'}
+                </button>
+              </div>
+
+              {isAddingNewCat ? (
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={newCatName}
+                    onChange={(e) => setNewCatName(e.target.value)}
+                    placeholder="Nama kategori baru..."
+                    className="w-full bg-white text-slate-900 font-semibold text-sm px-3.5 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    style={{ color: '#0f172a', backgroundColor: '#ffffff' }}
+                  />
+                  <button
+                    type="button"
+                    onClick={handleAddCategory}
+                    className="bg-blue-600 text-white font-semibold text-xs px-3 py-2 rounded-xl hover:bg-blue-700 whitespace-nowrap cursor-pointer"
+                  >
+                    Simpan
+                  </button>
+                </div>
+              ) : (
+                <select
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value)}
+                  className="w-full bg-white text-slate-900 font-semibold text-sm px-3.5 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  style={{ color: '#0f172a', backgroundColor: '#ffffff' }}
+                >
+                  {dbCategories.length > 0 ? (
+                    dbCategories.map((cat, idx) => (
+                      <option key={cat.id || idx} value={cat.name} style={{ color: '#0f172a', backgroundColor: '#ffffff' }}>
+                        {cat.icon ? `${cat.icon} ` : ''}{cat.name}
+                      </option>
+                    ))
+                  ) : (
+                    <>
+                      <option value="Elektronik & Gadget" style={{ color: '#0f172a', backgroundColor: '#ffffff' }}>Elektronik & Gadget</option>
+                      <option value="Groceries & FMCG" style={{ color: '#0f172a', backgroundColor: '#ffffff' }}>Groceries & FMCG</option>
+                      <option value="Fashion & Sepatu" style={{ color: '#0f172a', backgroundColor: '#ffffff' }}>Fashion & Sepatu</option>
+                      <option value="Rumah Tangga & Hobi" style={{ color: '#0f172a', backgroundColor: '#ffffff' }}>Rumah Tangga & Hobi</option>
+                    </>
+                  )}
+                </select>
+              )}
             </div>
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">Brand / Merk</label>

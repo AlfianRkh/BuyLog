@@ -72,16 +72,9 @@ export default function SmartFinAccountsPage() {
       }
     } catch (err) {
       console.error('Failed fetching accounts from BE:', err);
-      // Fallback local initial state
-      const fallbackAccounts = [
-        { id: 'acc1', name: 'BCA Utama', type: 'Bank', number: '5410-8891-2291', balance: 12800000, color: '#3b82f6' },
-        { id: 'acc2', name: 'GoPay Premium', type: 'E-Wallet', number: '0812-8899-2341', balance: 950000, color: '#06b6d4' },
-        { id: 'acc3', name: 'Kas Tunai Dompet', type: 'Cash', number: 'Dompet Saku', balance: 500000, color: '#10b981' }
-      ];
-      setAccounts(fallbackAccounts);
-      setTotalLiquidity(14250000);
-      setFromAcc('acc1');
-      setToAcc('acc2');
+      triggerToast('Gagal memuat daftar rekening dari database server.');
+      setAccounts([]);
+      setTotalLiquidity(0);
     } finally {
       setLoading(false);
     }
@@ -106,12 +99,8 @@ export default function SmartFinAccountsPage() {
       }
     } catch (err) {
       console.error('Failed fetching mutations from BE:', err);
-      // Fallback mutation items
-      setMutationsList([
-        { id: 'MUT-101', date: '06 Okt 2026 · 09:45 WIB', merchant: 'Indomaret Merr Surabaya', category: '🥫 Kebutuhan Dapur', amount: 88500, type: 'expense', method: 'QRIS BCA', invoice: 'INV/20261006/00892' },
-        { id: 'MUT-102', date: '05 Okt 2026 · 20:15 WIB', merchant: 'Kopi Kenangan & Kitchen', category: '🍽️ Makan & Minum', amount: 57895, type: 'expense', method: 'QRIS BCA', invoice: 'INV/20261005/0421' },
-        { id: 'MUT-104', date: '01 Okt 2026 · 08:00 WIB', merchant: 'PT Inovasi Digital Nusantara', category: '💼 Pemasukan Utama', amount: 7500000, type: 'income', method: 'Transfer Bank', invoice: 'PAYROLL-20261001' }
-      ]);
+      triggerToast('Gagal memuat riwayat mutasi rekening dari database.');
+      setMutationsList([]);
     } finally {
       setMutasiLoading(false);
     }

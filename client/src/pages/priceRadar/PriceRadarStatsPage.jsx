@@ -29,6 +29,7 @@ export default function PriceRadarStatsPage() {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [timeFilter, setTimeFilter] = useState('year');
+  const [selectedYear, setSelectedYear] = useState('2026');
   const [toastMsg, setToastMsg] = useState(null);
 
   const showToast = (msg) => {
@@ -52,10 +53,65 @@ export default function PriceRadarStatsPage() {
     fetchStats();
   }, [timeFilter]);
 
-  const realizedSavings = stats?.realizedSavings || 2850000;
-  const targetHitCount = stats?.targetHitCount || 8;
-  const totalCount = stats?.totalCount || 12;
-  const avgDealScore = stats?.avgDealScore || '8.4';
+  const realizedSavings = stats?.realizedSavings || 0;
+  const targetHitCount = stats?.targetHitCount || 0;
+  const totalCount = stats?.totalCount || 0;
+  const avgDealScore = stats?.avgDealScore || 0;
+  const monthlyVelocity = stats?.savingsVelocity ?? Math.round(realizedSavings / 12);
+  const yearlyEstimate = stats?.yearlyEstimate ?? (monthlyVelocity * 12);
+  const categoryBreakdown = stats?.categoryBreakdown || [];
+  const impulseRestraintPercent = stats?.impulseRestraintPercent || 0;
+  const disciplineScore = stats?.disciplineScore || 0;
+  const hunterLevel = stats?.hunterLevel || 'BEGINNER HUNTER';
+
+  const categoryColors = ['var(--primary-600)', 'var(--success-500)', 'var(--danger-500)', 'var(--warning-500)', 'var(--gray-400)'];
+
+  const handleYearChange = (e) => {
+    const yr = e.target.value;
+    setSelectedYear(yr);
+    setTimeFilter(yr);
+    showToast(`Filter tahun ${yr === 'all' ? 'Semua Tahun' : yr} diterapkan`);
+  };
+
+  const handleDownloadPDF = () => {
+    showToast("Menyiapkan dokumen PDF telemetri belanja...");
+    setTimeout(() => {
+      window.print();
+    }, 400);
+  };
+
+  const handleExportExcel = () => {
+    showToast("Mengunduh file Excel telemetri belanja...");
+
+    const headers = ['Kategori / Metric', 'Nilai', 'Keterangan'];
+    const rows = [
+      ['Realized Savings', `Rp ${realizedSavings.toLocaleString('id-ID')}`, 'Total Hemat Pembelian Riil'],
+      ['Target Achieved', `${targetHitCount} dari ${totalCount} Item`, 'Sukses eksekusi target'],
+      ['Avg Deal Score', `${avgDealScore} / 10.0`, 'Kedisiplinan harga beli'],
+      ['Savings Velocity', `Rp ${monthlyVelocity.toLocaleString('id-ID')} / Bulan`, 'Rata-rata penghematan per bulan'],
+      ['Estimasi Tahunan', `Rp ${yearlyEstimate.toLocaleString('id-ID')}`, 'Proyeksi hemat 1 tahun'],
+      ['Impulse Restraint', `${impulseRestraintPercent}%`, 'Tingkat penahanan beli impulsif'],
+      ['Discipline Score', `${disciplineScore} / 100`, 'Skor kedisiplinan deal hunter'],
+      ['Hunter Level', hunterLevel, 'Peringkat hunter'],
+      ['', '', ''],
+      ['DISTRIBUSI KATEGORI', '', ''],
+      ...categoryBreakdown.map(c => [c.category, `Rp ${Number(c.savings).toLocaleString('id-ID')}`, `${c.percentage}% dari total hemat`])
+    ];
+
+    let tsvContent = '\uFEFF' + headers.join('\t') + '\n';
+    rows.forEach(row => {
+      tsvContent += row.map(val => `"${val}"`).join('\t') + '\n';
+    });
+
+    const blob = new Blob([tsvContent], { type: 'application/vnd.ms-excel;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `Laporan_Statistik_PriceRadar_${selectedYear}.xls`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   return (
     <div className="prst-container">
@@ -106,18 +162,38 @@ export default function PriceRadarStatsPage() {
         </div>
 
         <div className="prst-actions-group">
-          <button onClick={() => showToast("Filter rentang: 2026 Aktif")} className="prst-btn-secondary">
-            <Calendar size={15} color="var(--primary-600)" />
-            <span>Tahun 2026</span>
-          </button>
-          <button onClick={() => showToast("Mengunduh laporan PDF telemetri belanja...")} className="prst-btn-secondary">
+          <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}>
+            <Calendar size={15} color="var(--primary-600)" style={{ position: 'absolute', left: '12px', pointerEvents: 'none', zIndex: 1 }} />
+            <select
+              value={selectedYear}
+              onChange={handleYearChange}
+              className="prst-btn-secondary"
+              style={{
+                paddingLeft: '34px',
+                paddingRight: '12px',
+                appearance: 'auto',
+                cursor: 'pointer',
+                fontWeight: 700,
+                color: 'var(--gray-800)',
+                backgroundColor: '#ffffff'
+              }}
+            >
+              <option value="2026">Tahun 2026</option>
+              <option value="2025">Tahun 2025</option>
+              <option value="2024">Tahun 2024</option>
+              <option value="all">Semua Tahun</option>
+            </select>
+          </div>
+
+          {/* <button onClick={handleDownloadPDF} className="prst-btn-secondary">
             <Download size={15} color="var(--success-600)" />
             <span>Unduh PDF</span>
           </button>
-          <button onClick={() => showToast("Mengekspor file CSV audit harga...")} className="prst-btn-primary">
+
+          <button onClick={handleExportExcel} className="prst-btn-primary">
             <FileSpreadsheet size={16} />
-            <span>Ekspor CSV</span>
-          </button>
+            <span>Export Excel</span>
+          </button> */}
         </div>
       </div>
 
@@ -221,13 +297,13 @@ export default function PriceRadarStatsPage() {
           </div>
           <div>
             <div className="prst-kpi-value" style={{ color: 'var(--primary-600)' }}>
-              Rp 356k <span style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--gray-500)' }}>/ Bln</span>
+              {formatRupiah(monthlyVelocity)} <span style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--gray-500)' }}>/ Bln</span>
             </div>
             <div style={{ fontSize: '0.75rem', color: 'var(--gray-500)', marginTop: '4px' }}>Kecepatan penghematan rata-rata per bulan</div>
           </div>
           <div className="prst-kpi-footer">
             <span>Estimasi Tahunan:</span>
-            <span style={{ color: 'var(--primary-600)', fontWeight: 800 }}>Rp 4.270.000</span>
+            <span style={{ color: 'var(--primary-600)', fontWeight: 800 }}>{formatRupiah(yearlyEstimate)}</span>
           </div>
         </div>
       </div>
@@ -244,45 +320,28 @@ export default function PriceRadarStatsPage() {
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', paddingTop: '4px' }}>
-            <div className="prst-progress-row">
-              <div className="prst-progress-info">
-                <span className="prst-progress-label">Elektronik & Gadget</span>
-                <span className="prst-progress-value">Rp 1.850.000 (65%)</span>
+            {categoryBreakdown.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '24px 0', color: 'var(--gray-500)', fontSize: '0.875rem' }}>
+                Belum ada data distribusi penghematan kategori.
               </div>
-              <div className="prst-progress-track">
-                <div className="prst-progress-fill" style={{ width: '65%', backgroundColor: 'var(--primary-600)' }}></div>
-              </div>
-            </div>
-
-            <div className="prst-progress-row">
-              <div className="prst-progress-info">
-                <span className="prst-progress-label">Fashion & Apparel</span>
-                <span className="prst-progress-value" style={{ color: 'var(--success-600)' }}>Rp 520.000 (18%)</span>
-              </div>
-              <div className="prst-progress-track">
-                <div className="prst-progress-fill" style={{ width: '18%', backgroundColor: 'var(--success-500)' }}></div>
-              </div>
-            </div>
-
-            <div className="prst-progress-row">
-              <div className="prst-progress-info">
-                <span className="prst-progress-label">Groceries & FMCG</span>
-                <span className="prst-progress-value" style={{ color: 'var(--danger-600)' }}>Rp 310.000 (11%)</span>
-              </div>
-              <div className="prst-progress-track">
-                <div className="prst-progress-fill" style={{ width: '11%', backgroundColor: 'var(--danger-500)' }}></div>
-              </div>
-            </div>
-
-            <div className="prst-progress-row">
-              <div className="prst-progress-info">
-                <span className="prst-progress-label">Rumah Tangga</span>
-                <span className="prst-progress-value" style={{ color: 'var(--gray-600)' }}>Rp 170.000 (6%)</span>
-              </div>
-              <div className="prst-progress-track">
-                <div className="prst-progress-fill" style={{ width: '6%', backgroundColor: 'var(--gray-400)' }}></div>
-              </div>
-            </div>
+            ) : (
+              categoryBreakdown.map((item, idx) => {
+                const color = categoryColors[idx % categoryColors.length];
+                return (
+                  <div key={item.category || idx} className="prst-progress-row">
+                    <div className="prst-progress-info">
+                      <span className="prst-progress-label">{item.category}</span>
+                      <span className="prst-progress-value" style={{ color: color }}>
+                        {formatRupiah(item.savings)} ({item.percentage}%)
+                      </span>
+                    </div>
+                    <div className="prst-progress-track">
+                      <div className="prst-progress-fill" style={{ width: `${item.percentage}%`, backgroundColor: color }}></div>
+                    </div>
+                  </div>
+                );
+              })
+            )}
           </div>
         </div>
 
@@ -294,7 +353,7 @@ export default function PriceRadarStatsPage() {
             </h2>
           </div>
           <p style={{ fontSize: '0.825rem', color: 'var(--gray-600)', margin: 0, lineHeight: 1.5 }}>
-            Berdasarkan riwayat transaksi, Anda berhasil menahan <strong style={{ color: 'var(--gray-900)' }}>87%</strong> pembelian impulsif sebelum harga menyentuh zona target beli ideal.
+            Berdasarkan riwayat transaksi, Anda berhasil menahan <strong style={{ color: 'var(--gray-900)' }}>{impulseRestraintPercent}%</strong> pembelian impulsif sebelum harga menyentuh zona target beli ideal.
           </p>
 
           <div style={{ backgroundColor: 'var(--gray-50)', border: '1px solid var(--gray-200)', borderRadius: 'var(--radius-md)', padding: '16px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
@@ -302,12 +361,12 @@ export default function PriceRadarStatsPage() {
               <span style={{ color: 'var(--gray-500)', fontWeight: 700 }}>HUNTER RANK:</span>
               <span style={{ color: 'var(--success-700)', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '4px' }}>
                 <Award size={16} color="var(--success-600)" />
-                PRO HUNTER LEVEL 4
+                {hunterLevel}
               </span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', justify: 'space-between', fontSize: '0.8rem' }}>
               <span style={{ color: 'var(--gray-500)', fontWeight: 700 }}>DISCIPLINE SCORE:</span>
-              <span style={{ color: 'var(--gray-900)', fontWeight: 800 }}>94 / 100</span>
+              <span style={{ color: 'var(--gray-900)', fontWeight: 800 }}>{disciplineScore} / 100</span>
             </div>
           </div>
         </div>

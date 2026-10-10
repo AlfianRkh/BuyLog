@@ -21,16 +21,16 @@ export default function SmartFinSplitBillPage() {
 
   const [loading, setLoading] = useState(true);
   const [billMeta, setBillMeta] = useState({
-    title: 'Kopi Kenangan & Kitchen - Galaxy Mall',
-    merchant: 'Kopi Kenangan & Kitchen - Galaxy Mall',
-    invoiceNo: 'INV-KK-20261005-0421',
-    date: '05 Okt 2026, 20:15 WIB',
-    paymentMethod: 'QRIS BCA',
-    paidBy: 'Alfian S.',
-    subtotalMenu: 190000,
-    taxPb1: 19000,
-    service: 11000,
-    totalBill: 220000
+    title: '',
+    merchant: '',
+    invoiceNo: '',
+    date: '',
+    paymentMethod: '',
+    paidBy: '',
+    subtotalMenu: 0,
+    taxPb1: 0,
+    service: 0,
+    totalBill: 0
   });
 
   const [participants, setParticipants] = useState([]);
@@ -48,13 +48,7 @@ export default function SmartFinSplitBillPage() {
       }
     } catch (err) {
       console.error('Failed fetching split bill from BE:', err);
-      // Fallback local data if BE connection fails
-      setParticipants([
-        { id: 'p1', name: 'Alfian (Saya)', isHost: true, isPaid: true, portion: 57895, desc: 'Nasgor Gila + Fries' },
-        { id: 'p2', name: 'Budi Pratama', isHost: false, isPaid: false, portion: 92632, desc: 'Double Wagyu + Fries' },
-        { id: 'p3', name: 'Sari Anggraini', isHost: false, isPaid: true, portion: 63684, desc: 'Carbonara + Fries' },
-        { id: 'p4', name: 'Dimas Raditya', isHost: false, isPaid: false, portion: 31263, desc: 'Kopi Mantan + Fries' },
-      ]);
+      triggerToast('Gagal memuat data split bill dari server');
     } finally {
       setLoading(false);
     }

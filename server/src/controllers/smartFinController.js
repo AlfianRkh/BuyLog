@@ -1,52 +1,23 @@
+const db = require('../config/database');
 const SmartFinAccount = require('../models/SmartFinAccount');
 const SmartFinCategory = require('../models/SmartFinCategory');
+const SmartFinSplitBill = require('../models/SmartFinSplitBill');
+const SmartFinMutation = require('../models/SmartFinMutation');
+const SmartFinBudget = require('../models/SmartFinBudget');
+const SmartFinTransaction = require('../models/SmartFinTransaction');
 
-// In-memory / Backend Database Store for SmartFin Split-Bill & Mutations
-let splitBillData = {
-  id: 'sb-1',
-  title: 'Kopi Kenangan & Kitchen - Galaxy Mall',
-  merchant: 'Kopi Kenangan & Kitchen - Galaxy Mall',
-  invoiceNo: 'INV-KK-20261005-0421',
-  date: '05 Okt 2026, 20:15 WIB',
-  paymentMethod: 'QRIS BCA',
-  paidBy: 'Alfian S.',
-  subtotalMenu: 190000,
-  taxPb1: 19000,
-  service: 11000,
-  totalBill: 220000,
-  participants: [
-    { id: 'p1', name: 'Alfian (Saya)', isHost: true, isPaid: true, portion: 57895, desc: 'Nasgor Gila + Fries' },
-    { id: 'p2', name: 'Budi Pratama', isHost: false, isPaid: false, portion: 92632, desc: 'Double Wagyu + Fries' },
-    { id: 'p3', name: 'Sari Anggraini', isHost: false, isPaid: true, portion: 63684, desc: 'Carbonara + Fries' },
-    { id: 'p4', name: 'Dimas Raditya', isHost: false, isPaid: false, portion: 31263, desc: 'Kopi Mantan + Fries' }
-  ]
-};
-
-// AccountsData is now fully persisted in PostgreSQL smartfin_accounts table via SmartFinAccount model
-
-let mutationsData = {
-  'acc1': [
-    { id: 'MUT-101', date: '06 Okt 2026 · 09:45 WIB', merchant: 'Indomaret Merr Surabaya', category: '🥫 Kebutuhan Dapur', amount: 88500, type: 'expense', method: 'QRIS BCA', invoice: 'INV/20261006/00892' },
-    { id: 'MUT-102', date: '05 Okt 2026 · 20:15 WIB', merchant: 'Kopi Kenangan & Kitchen', category: '🍽️ Makan & Minum', amount: 57895, type: 'expense', method: 'QRIS BCA', invoice: 'INV/20261005/0421' },
-    { id: 'MUT-103', date: '04 Okt 2026 · 14:10 WIB', merchant: 'Superindo Merr Rungkut', category: '🥫 Bahan Makanan Segar', amount: 185000, type: 'expense', method: 'Debit BCA', invoice: 'INV/20261004/00188' },
-    { id: 'MUT-104', date: '01 Okt 2026 · 08:00 WIB', merchant: 'PT Inovasi Digital Nusantara', category: '💼 Pemasukan Utama', amount: 7500000, type: 'income', method: 'Transfer Bank', invoice: 'PAYROLL-20261001' },
-  ],
-  'acc2': [
-    { id: 'MUT-201', date: '02 Okt 2026 · 18:30 WIB', merchant: 'Starbucks Coffee Galaxy Mall', category: '☕ Kafe & Hiburan', amount: 62000, type: 'expense', method: 'GoPay QRIS', invoice: 'SBX-99812-2026' },
-    { id: 'MUT-202', date: '29 Sep 2026 · 12:15 WIB', merchant: 'Top Up GoPay via BCA Utama', category: '🔄 Top Up', amount: 500000, type: 'income', method: 'Transfer', invoice: 'TOPUP-GOPAY-882' },
-  ],
-  'acc3': [
-    { id: 'MUT-301', date: '03 Okt 2026 · 11:20 WIB', merchant: 'Parkir Superindo & Tips', category: '🚗 Transport', amount: 15000, type: 'expense', method: 'Cash', invoice: 'CASH-001' },
-    { id: 'MUT-302', date: '01 Okt 2026 · 16:45 WIB', merchant: 'Tarik Tunai ATM BCA', category: '💵 Tarik Tunai', amount: 300000, type: 'income', method: 'Cash', invoice: 'ATM-BCA-992' },
-  ]
-};
+// ---------------------------------------------------------
+// SPLIT BILL ENDPOINTS (PostgreSQL DB)
+// ---------------------------------------------------------
 
 // GET /api/smartfin/split-bill
 exports.getSplitBill = async (req, res, next) => {
   try {
+    const userId = req.user ? req.user.id : 1;
+    const splitBill = await SmartFinSplitBill.getSplitBill(userId);
     res.json({
       success: true,
-      data: splitBillData
+      data: splitBill
     });
   } catch (error) {
     next(error);
@@ -56,19 +27,15 @@ exports.getSplitBill = async (req, res, next) => {
 // PUT /api/smartfin/split-bill/members/:id/toggle-paid
 exports.toggleMemberPaid = async (req, res, next) => {
   try {
+    const userId = req.user ? req.user.id : 1;
     const { id } = req.params;
-    const member = splitBillData.participants.find(p => p.id === id);
 
-    if (!member) {
-      return res.status(404).json({ success: false, message: 'Peserta tidak ditemukan di server BE.' });
-    }
-
-    member.isPaid = !member.isPaid;
+    const updatedBill = await SmartFinSplitBill.toggleMemberPaid(id, userId);
 
     res.json({
       success: true,
-      message: `Status pembayaran ${member.name} berhasil diperbarui di Backend (${member.isPaid ? 'LUNAS ✅' : 'MENUNGGU'}).`,
-      data: splitBillData
+      message: `Status pembayaran berhasil diperbarui di Database!`,
+      data: updatedBill
     });
   } catch (error) {
     next(error);
@@ -78,28 +45,19 @@ exports.toggleMemberPaid = async (req, res, next) => {
 // POST /api/smartfin/split-bill/members
 exports.addMember = async (req, res, next) => {
   try {
+    const userId = req.user ? req.user.id : 1;
     const { name, desc, portion } = req.body;
 
     if (!name) {
       return res.status(400).json({ success: false, message: 'Nama peserta wajib diisi.' });
     }
 
-    const newId = 'p' + (splitBillData.participants.length + 1) + '_' + Date.now().toString().slice(-4);
-    const newMember = {
-      id: newId,
-      name,
-      isHost: false,
-      isPaid: false,
-      portion: Number(portion) || 25000,
-      desc: desc || 'Pesanan Tambahan'
-    };
-
-    splitBillData.participants.push(newMember);
+    const updatedBill = await SmartFinSplitBill.addMember({ name, desc, portion, userId });
 
     res.status(201).json({
       success: true,
-      message: `Peserta ${name} berhasil ditambahkan ke Backend.`,
-      data: splitBillData
+      message: `Peserta ${name} berhasil ditambahkan ke Database!`,
+      data: updatedBill
     });
   } catch (error) {
     next(error);
@@ -181,6 +139,32 @@ exports.transferAccounts = async (req, res, next) => {
     const result = await SmartFinAccount.transferAccounts({ fromId, toId, amount, userId });
     const totalLiquidity = result.accounts.reduce((sum, a) => sum + (parseFloat(a.balance) || 0), 0);
 
+    // Record mutations in PostgreSQL DB for both accounts
+    const dateFormatted = new Date().toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) + ' · ' + new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WIB';
+    await SmartFinMutation.recordMutation({
+      accountId: fromId,
+      dateStr: dateFormatted,
+      merchant: `Transfer Keluar ke ${result.toAcc.name}`,
+      category: '🔄 Transfer Intrabank',
+      amount: result.amount,
+      type: 'expense',
+      method: 'Transfer DB',
+      invoice: 'TRF-OUT-' + Date.now(),
+      userId
+    });
+
+    await SmartFinMutation.recordMutation({
+      accountId: toId,
+      dateStr: dateFormatted,
+      merchant: `Transfer Masuk dari ${result.fromAcc.name}`,
+      category: '🔄 Transfer Intrabank',
+      amount: result.amount,
+      type: 'income',
+      method: 'Transfer DB',
+      invoice: 'TRF-IN-' + Date.now(),
+      userId
+    });
+
     res.json({
       success: true,
       message: `Transfer Rp ${Number(result.amount).toLocaleString('id-ID')} dari ${result.fromAcc.name} ke ${result.toAcc.name} berhasil dieksekusi di Database!`,
@@ -219,9 +203,7 @@ exports.getAccountMutations = async (req, res, next) => {
     const accounts = await SmartFinAccount.getAccounts(userId);
     const account = accounts.find(a => a.id === id.toString() || a.name.toLowerCase() === id.toString().toLowerCase());
 
-    const mutations = mutationsData[id] || (account && mutationsData[account.id]) || [
-      { id: 'MUT-DEF-1', date: '06 Okt 2026 · 10:00 WIB', merchant: 'Transaksi Pembukaan Rekening', category: '💼 Saldo Awal', amount: account ? account.balance : 1000000, type: 'income', method: 'Deposit', invoice: 'INIT-001' }
-    ];
+    const mutations = await SmartFinMutation.getMutationsByAccountId(id, userId);
 
     const totalExpense = mutations.filter(m => m.type === 'expense').reduce((sum, m) => sum + m.amount, 0);
     const totalIncome = mutations.filter(m => m.type === 'income').reduce((sum, m) => sum + m.amount, 0);
@@ -242,21 +224,12 @@ exports.getAccountMutations = async (req, res, next) => {
 };
 
 // ---------------------------------------------------------
-// POS ANGGARAN & ENVELOPE BUDGETING ENDPOINTS
+// POS ANGGARAN & ENVELOPE BUDGETING ENDPOINTS (PostgreSQL DB)
 // ---------------------------------------------------------
 
-let budgetsData = [
-  { id: 'env-1', name: '🥫 Kebutuhan Dapur & Bahan', limit: 2500000, spent: 1850000, icon: '🥫', category: 'Pokok' },
-  { id: 'env-2', name: '🍽️ Makan Luar & Resto', limit: 1200000, spent: 980000, icon: '🍽️', category: 'Pokok' },
-  { id: 'env-3', name: '⚡ Tagihan & Utilitas', limit: 800000, spent: 620000, icon: '⚡', category: 'Pokok' },
-  { id: 'env-4', name: '🚗 Bensin & Transport', limit: 600000, spent: 250000, icon: '🚗', category: 'Pokok' },
-  { id: 'env-5', name: '☕ Kafe & Hiburan', limit: 500000, spent: 150000, icon: '☕', category: 'Keinginan' },
-  { id: 'env-6', name: '🛡️ Dana Darurat & Investasi', limit: 900000, spent: 0, icon: '🛡️', category: 'Tabungan' }
-];
-
-const calculateBudgetMetrics = () => {
-  const totalPlafon = budgetsData.reduce((sum, b) => sum + (b.limit || 0), 0);
-  const totalSpent = budgetsData.reduce((sum, b) => sum + (b.spent || 0), 0);
+const calculateBudgetMetrics = (budgets) => {
+  const totalPlafon = budgets.reduce((sum, b) => sum + (b.limit || 0), 0);
+  const totalSpent = budgets.reduce((sum, b) => sum + (b.spent || 0), 0);
   const remainingQuota = totalPlafon - totalSpent;
   const burnRatePct = totalPlafon > 0 ? Number(((totalSpent / totalPlafon) * 100).toFixed(1)) : 0;
   
@@ -285,10 +258,12 @@ const calculateBudgetMetrics = () => {
 // GET /api/smartfin/budgets
 exports.getBudgets = async (req, res, next) => {
   try {
-    const metrics = calculateBudgetMetrics();
+    const userId = req.user ? req.user.id : 1;
+    const budgets = await SmartFinBudget.getBudgets(userId);
+    const metrics = calculateBudgetMetrics(budgets);
     res.json({
       success: true,
-      budgets: budgetsData,
+      budgets,
       metrics
     });
   } catch (error) {
@@ -299,28 +274,20 @@ exports.getBudgets = async (req, res, next) => {
 // POST /api/smartfin/budgets
 exports.createBudget = async (req, res, next) => {
   try {
+    const userId = req.user ? req.user.id : 1;
     const { name, limit, icon, category } = req.body;
 
     if (!name) {
       return res.status(400).json({ success: false, message: 'Nama pos anggaran wajib diisi.' });
     }
 
-    const newEnvelope = {
-      id: 'env-' + Date.now(),
-      name: name.trim(),
-      limit: Number(limit) || 1000000,
-      spent: 0,
-      icon: icon || '📦',
-      category: category || 'Umum'
-    };
-
-    budgetsData.push(newEnvelope);
-    const metrics = calculateBudgetMetrics();
+    const budgets = await SmartFinBudget.createBudget({ name, limit, icon, category, userId });
+    const metrics = calculateBudgetMetrics(budgets);
 
     res.status(201).json({
       success: true,
-      message: `Pos anggaran "${name}" berhasil ditambahkan ke Backend.`,
-      budgets: budgetsData,
+      message: `Pos anggaran "${name}" berhasil ditambahkan ke Database.`,
+      budgets,
       metrics
     });
   } catch (error) {
@@ -331,29 +298,22 @@ exports.createBudget = async (req, res, next) => {
 // POST /api/smartfin/budgets/apply-503020
 exports.applyRule503020 = async (req, res, next) => {
   try {
+    const userId = req.user ? req.user.id : 1;
     const salary = Number(req.body.salary) || 8500000;
-    const needsLimit = Math.round(salary * 0.5);
-    const wantsLimit = Math.round(salary * 0.3);
-    const savingsLimit = Math.round(salary * 0.2);
-
-    budgetsData = [
-      { id: 'env-503020-1', name: '🥫 Kebutuhan Pokok & Bahan Dapur (50%)', limit: needsLimit, spent: 1850000, icon: '🥫', category: 'Pokok' },
-      { id: 'env-503020-2', name: '☕ Keinginan & Gaya Hidup (30%)', limit: wantsLimit, spent: 980000, icon: '☕', category: 'Keinginan' },
-      { id: 'env-503020-3', name: '🛡️ Tabungan & Investasi (20%)', limit: savingsLimit, spent: 0, icon: '🛡️', category: 'Tabungan' }
-    ];
-
-    const metrics = calculateBudgetMetrics();
+    
+    const budgets = await SmartFinBudget.applyRule503020(salary, userId);
+    const metrics = calculateBudgetMetrics(budgets);
 
     res.json({
       success: true,
-      message: `Pola alokasi 50/30/20 dengan basis gaji Rp ${salary.toLocaleString('id-ID')} berhasil diterapkan di Backend.`,
-      budgets: budgetsData,
+      message: `Pola alokasi 50/30/20 dengan basis gaji Rp ${salary.toLocaleString('id-ID')} berhasil diterapkan di Database.`,
+      budgets,
       metrics,
       ruleSummary: {
         salary,
-        needsLimit,
-        wantsLimit,
-        savingsLimit
+        needsLimit: Math.round(salary * 0.5),
+        wantsLimit: Math.round(salary * 0.3),
+        savingsLimit: Math.round(salary * 0.2)
       }
     });
   } catch (error) {
@@ -364,20 +324,16 @@ exports.applyRule503020 = async (req, res, next) => {
 // DELETE /api/smartfin/budgets/:id
 exports.deleteBudget = async (req, res, next) => {
   try {
+    const userId = req.user ? req.user.id : 1;
     const { id } = req.params;
-    const target = budgetsData.find(b => b.id === id);
 
-    if (!target) {
-      return res.status(404).json({ success: false, message: 'Pos anggaran tidak ditemukan.' });
-    }
-
-    budgetsData = budgetsData.filter(b => b.id !== id);
-    const metrics = calculateBudgetMetrics();
+    const budgets = await SmartFinBudget.deleteBudget(id, userId);
+    const metrics = calculateBudgetMetrics(budgets);
 
     res.json({
       success: true,
-      message: `Pos anggaran "${target.name}" berhasil dihapus dari Backend.`,
-      budgets: budgetsData,
+      message: `Pos anggaran berhasil dihapus dari Database.`,
+      budgets,
       metrics
     });
   } catch (error) {
@@ -386,17 +342,8 @@ exports.deleteBudget = async (req, res, next) => {
 };
 
 // ---------------------------------------------------------
-// TRANSACTIONS, DASHBOARD, REPORTS & SETTINGS STORE & ENDPOINTS
+// TRANSACTIONS, DASHBOARD, REPORTS & SETTINGS (PostgreSQL DB)
 // ---------------------------------------------------------
-
-
-let transactionsData = [
-  { id: 'TX-1001', date: '06 Okt 2026', time: '09:45 WIB', merchant: 'Indomaret Merr Surabaya', itemsCount: 4, amount: 88500, type: 'expense', account: 'BCA Utama', category: '🥫 Kebutuhan Dapur', status: 'Verified OCR', receiptNo: 'INV/20261006/00892', confidence: 99.4 },
-  { id: 'TX-1002', date: '05 Okt 2026', time: '20:15 WIB', merchant: 'Kopi Kenangan & Kitchen', itemsCount: 3, amount: 57895, type: 'expense', account: 'BCA Utama', category: '🍽️ Makan & Minum', status: 'Verified OCR', receiptNo: 'INV/20261005/0421', confidence: 98.7 },
-  { id: 'TX-1003', date: '04 Okt 2026', time: '14:10 WIB', merchant: 'Superindo Merr Rungkut', itemsCount: 7, amount: 185000, type: 'expense', account: 'BCA Utama', category: '🥫 Kebutuhan Dapur', status: 'Verified OCR', receiptNo: 'INV/20261004/00188', confidence: 97.8 },
-  { id: 'TX-1004', date: '02 Okt 2026', time: '18:30 WIB', merchant: 'Starbucks Coffee Galaxy Mall', itemsCount: 1, amount: 62000, type: 'expense', account: 'GoPay Premium', category: '☕ Kafe & Hiburan', status: 'Verified OCR', receiptNo: 'SBX-99812-2026', confidence: 99.1 },
-  { id: 'TX-1005', date: '01 Okt 2026', time: '08:00 WIB', merchant: 'PT Inovasi Digital Nusantara', itemsCount: 1, amount: 7500000, type: 'income', account: 'BCA Utama', category: '💼 Pemasukan Utama', status: 'Manual Bank', receiptNo: 'PAYROLL-20261001', confidence: 100 }
-];
 
 let ocrSettingsData = {
   ocrEngine: 'Tesseract 5.4 Neural + Vision LLM',
@@ -414,18 +361,21 @@ exports.getDashboard = async (req, res, next) => {
   try {
     const userId = req.user ? req.user.id : 1;
     const accounts = await SmartFinAccount.getAccounts(userId);
+    const transactions = await SmartFinTransaction.getTransactions(userId);
+    const budgets = await SmartFinBudget.getBudgets(userId);
+
     const totalBalance = accounts.reduce((sum, a) => sum + (parseFloat(a.balance) || 0), 0);
-    const monthExpenses = transactionsData.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
-    const monthIncome = transactionsData.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
+    const monthExpenses = transactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
+    const monthIncome = transactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
 
-    const activeEnvelopesCount = budgetsData.length;
-    const totalPlafon = budgetsData.reduce((sum, b) => sum + (b.limit || 0), 0);
-    const totalSpentEnvelopes = budgetsData.reduce((sum, b) => sum + (b.spent || 0), 0);
+    const activeEnvelopesCount = budgets.length;
+    const totalPlafon = budgets.reduce((sum, b) => sum + (b.limit || 0), 0);
+    const totalSpentEnvelopes = budgets.reduce((sum, b) => sum + (b.spent || 0), 0);
 
-    const recentTransactions = transactionsData.slice(0, 5);
+    const recentTransactions = transactions.slice(0, 5);
 
     // Calculate dynamic category breakdown from envelopes
-    const categoryBreakdown = budgetsData
+    const categoryBreakdown = budgets
       .filter(b => b.spent > 0 || b.limit > 0)
       .map(b => {
         const percentage = totalSpentEnvelopes > 0 ? Number(((b.spent / totalSpentEnvelopes) * 100).toFixed(1)) : 0;
@@ -437,14 +387,14 @@ exports.getDashboard = async (req, res, next) => {
         };
       });
 
-    const verifiedCount = transactionsData.filter(t => t.status && t.status.toLowerCase().includes('verified')).length;
+    const verifiedCount = transactions.filter(t => t.status && t.status.toLowerCase().includes('verified')).length;
 
     const insights = {
-      verifiedCount: verifiedCount || transactionsData.length,
+      verifiedCount: verifiedCount || transactions.length,
       accuracyRate: 99.2,
       topCategory: categoryBreakdown[0] ? categoryBreakdown[0].name : 'Kebutuhan Dapur',
       duplicateCount: 0,
-      totalTransactionsCount: transactionsData.length
+      totalTransactionsCount: transactions.length
     };
 
     res.json({
@@ -460,7 +410,7 @@ exports.getDashboard = async (req, res, next) => {
         envelopeBurnRatePct: totalPlafon > 0 ? Number(((totalSpentEnvelopes / totalPlafon) * 100).toFixed(1)) : 0
       },
       accounts,
-      envelopes: budgetsData,
+      envelopes: budgets,
       categoryBreakdown,
       insights,
       recentTransactions
@@ -469,7 +419,6 @@ exports.getDashboard = async (req, res, next) => {
     next(error);
   }
 };
-
 
 // POST /api/smartfin/scan-receipt
 exports.scanReceipt = async (req, res, next) => {
@@ -484,36 +433,38 @@ exports.scanReceipt = async (req, res, next) => {
     const parsedAmount = Number(amount) || 48500;
     const parsedCategory = category || '🥫 Kebutuhan Dapur';
 
-    const newTxId = 'TX-' + Date.now().toString().slice(-4);
-    const dateFormatted = date || new Date().toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
-    const timeFormatted = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WIB';
-
-    const newTx = {
-      id: newTxId,
-      date: dateFormatted,
-      time: timeFormatted,
+    const newTx = await SmartFinTransaction.createTransaction({
       merchant: parsedMerchant,
-      itemsCount: Array.isArray(items) ? items.length : 3,
       amount: parsedAmount,
       type: 'expense',
-      account: targetAccountName,
       category: parsedCategory,
+      account: targetAccountName,
+      date,
+      itemsCount: Array.isArray(items) ? items.length : 3,
       status: 'Verified OCR AI',
-      receiptNo: receiptNo || 'OCR-' + Date.now().toString().slice(-6),
-      confidence: 99.2
-    };
-
-    // Add to transactions list
-    transactionsData.unshift(newTx);
+      receiptNo: receiptNo || ('OCR-' + Date.now().toString().slice(-6)),
+      confidence: 99.2,
+      userId
+    });
 
     // Update account balance in DB
     await SmartFinAccount.updateBalance(targetAccountName, -parsedAmount, userId);
 
-    // Deduct envelope budget
-    const targetEnv = budgetsData.find(b => b.name.toLowerCase().includes(parsedCategory.toLowerCase()) || parsedCategory.toLowerCase().includes(b.category.toLowerCase()));
-    if (targetEnv) {
-      targetEnv.spent += parsedAmount;
-    }
+    // Deduct envelope budget in DB
+    await SmartFinBudget.updateSpent(parsedCategory, parsedAmount, userId);
+
+    // Record mutation in DB
+    const accountObj = (await SmartFinAccount.getAccounts(userId)).find(a => a.name.toLowerCase() === targetAccountName.toLowerCase());
+    await SmartFinMutation.recordMutation({
+      accountId: accountObj ? accountObj.id : null,
+      merchant: parsedMerchant,
+      category: parsedCategory,
+      amount: parsedAmount,
+      type: 'expense',
+      method: 'OCR Auto-Debit',
+      invoice: newTx.receiptNo,
+      userId
+    });
 
     res.status(201).json({
       success: true,
@@ -532,22 +483,10 @@ exports.scanReceipt = async (req, res, next) => {
 // GET /api/smartfin/transactions
 exports.getTransactions = async (req, res, next) => {
   try {
+    const userId = req.user ? req.user.id : 1;
     const { search, category, type } = req.query;
 
-    let result = [...transactionsData];
-
-    if (search) {
-      const q = search.toLowerCase();
-      result = result.filter(t => t.merchant.toLowerCase().includes(q) || t.receiptNo.toLowerCase().includes(q));
-    }
-
-    if (category && category !== 'all') {
-      result = result.filter(t => t.category.toLowerCase().includes(category.toLowerCase()));
-    }
-
-    if (type && type !== 'all') {
-      result = result.filter(t => t.type === type);
-    }
+    const result = await SmartFinTransaction.getTransactions(userId, { search, category, type });
 
     const totalExpense = result.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
     const totalIncome = result.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
@@ -570,6 +509,7 @@ exports.getTransactions = async (req, res, next) => {
 // POST /api/smartfin/transactions
 exports.createTransaction = async (req, res, next) => {
   try {
+    const userId = req.user ? req.user.id : 1;
     const { merchant, amount, type, category, account, date, notes } = req.body;
 
     if (!merchant || !amount) {
@@ -581,33 +521,44 @@ exports.createTransaction = async (req, res, next) => {
     const txAccount = account || 'BCA Utama';
     const txCategory = category || 'Lain-lain';
 
-    const newTx = {
-      id: 'TX-' + Date.now().toString().slice(-4),
-      date: date || new Date().toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }),
-      time: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WIB',
+    const newTx = await SmartFinTransaction.createTransaction({
       merchant,
-      itemsCount: 1,
       amount: numAmount,
       type: txType,
-      account: txAccount,
       category: txCategory,
+      account: txAccount,
+      date,
       status: 'Manual Input',
       receiptNo: 'MANUAL-' + Date.now().toString().slice(-6),
-      confidence: 100
-    };
-
-    transactionsData.unshift(newTx);
+      confidence: 100,
+      userId
+    });
 
     // Update account balance in DB
-    const userId = req.user ? req.user.id : 1;
     const delta = txType === 'income' ? numAmount : -numAmount;
     await SmartFinAccount.updateBalance(txAccount, delta, userId);
+
+    // Record mutation in DB
+    const accounts = await SmartFinAccount.getAccounts(userId);
+    const accountObj = accounts.find(a => a.name.toLowerCase() === txAccount.toLowerCase());
+    await SmartFinMutation.recordMutation({
+      accountId: accountObj ? accountObj.id : null,
+      merchant,
+      category: txCategory,
+      amount: numAmount,
+      type: txType,
+      method: 'Manual Transaction',
+      invoice: newTx.receiptNo,
+      userId
+    });
+
+    const allTransactions = await SmartFinTransaction.getTransactions(userId);
 
     res.status(201).json({
       success: true,
       message: `Transaksi "${merchant}" berhasil dicatat di Database!`,
       transaction: newTx,
-      transactions: transactionsData
+      transactions: allTransactions
     });
   } catch (error) {
     next(error);
@@ -617,19 +568,15 @@ exports.createTransaction = async (req, res, next) => {
 // DELETE /api/smartfin/transactions/:id
 exports.deleteTransaction = async (req, res, next) => {
   try {
+    const userId = req.user ? req.user.id : 1;
     const { id } = req.params;
-    const target = transactionsData.find(t => t.id === id);
 
-    if (!target) {
-      return res.status(404).json({ success: false, message: 'Transaksi tidak ditemukan.' });
-    }
-
-    transactionsData = transactionsData.filter(t => t.id !== id);
+    const remainingTransactions = await SmartFinTransaction.deleteTransaction(id, userId);
 
     res.json({
       success: true,
-      message: `Transaksi "${target.merchant}" berhasil dihapus dari Backend.`,
-      transactions: transactionsData
+      message: `Transaksi berhasil dihapus dari Database.`,
+      transactions: remainingTransactions
     });
   } catch (error) {
     next(error);
@@ -639,44 +586,194 @@ exports.deleteTransaction = async (req, res, next) => {
 // GET /api/smartfin/reports
 exports.getReports = async (req, res, next) => {
   try {
-    const categoryTotals = {};
-    transactionsData.filter(t => t.type === 'expense').forEach(t => {
-      categoryTotals[t.category] = (categoryTotals[t.category] || 0) + t.amount;
-    });
+    const userId = req.user ? req.user.id : 1;
 
-    const categoryBreakdown = Object.entries(categoryTotals).map(([name, amount]) => ({
-      name,
-      amount,
-      percentage: Number(((amount / (transactionsData.filter(t => t.type === 'expense').reduce((s, x) => s + x.amount, 0) || 1)) * 100).toFixed(1))
+    // 1. Peringkat Merchant (Top Merchants) from Database
+    const topMerchantsRes = await db.query(`
+      SELECT 
+        COALESCE(s.name, 'Toko Umum') as name,
+        COUNT(p.id)::int as count,
+        COALESCE(SUM(p.total_amount), 0)::float as total
+      FROM purchases p
+      LEFT JOIN stores s ON p.store_id = s.id
+      WHERE (p.user_id = $1 OR p.user_id IS NULL)
+      GROUP BY s.name
+      ORDER BY total DESC, count DESC
+      LIMIT 10
+    `, [userId]);
+
+    let topMerchants = topMerchantsRes.rows;
+    if (topMerchants.length === 0) {
+      topMerchants = [
+        { name: 'Superindo Merr Surabaya', count: 8, total: 1250000 },
+        { name: 'Indomaret Merr', count: 12, total: 840000 },
+        { name: 'Kopi Kenangan Galaxy Mall', count: 6, total: 340000 },
+        { name: 'Starbucks Coffee', count: 4, total: 248000 }
+      ];
+    }
+
+    // 2. Laporan Analisis (Category Breakdown & Monthly Trends) from Database
+    const catBreakdownRes = await db.query(`
+      SELECT 
+        COALESCE(c.name, 'Lainnya') as name,
+        COALESCE(SUM(pi.subtotal), 0)::float as amount
+      FROM purchase_items pi
+      JOIN purchases p ON pi.purchase_id = p.id
+      LEFT JOIN products prod ON pi.product_id = prod.id
+      LEFT JOIN categories c ON prod.category_id = c.id
+      WHERE (p.user_id = $1 OR p.user_id IS NULL)
+      GROUP BY c.name
+      ORDER BY amount DESC
+    `, [userId]);
+
+    const totalExpenseAll = catBreakdownRes.rows.reduce((sum, r) => sum + r.amount, 0);
+
+    let categoryBreakdown = catBreakdownRes.rows.map(r => ({
+      name: r.name,
+      amount: r.amount,
+      percentage: totalExpenseAll > 0 ? Number(((r.amount / totalExpenseAll) * 100).toFixed(1)) : 0
     }));
 
-    const monthlyTrends = [
-      { month: 'Mei', income: 7500000, expense: 4100000 },
-      { month: 'Jun', income: 7500000, expense: 3900000 },
-      { month: 'Jul', income: 8200000, expense: 4400000 },
-      { month: 'Agu', income: 7500000, expense: 3700000 },
-      { month: 'Sep', income: 7800000, expense: 4050000 },
-      { month: 'Okt', income: 7500000, expense: transactionsData.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0) }
-    ];
+    if (categoryBreakdown.length === 0) {
+      const dbTransactions = await SmartFinTransaction.getTransactions(userId);
+      const categoryTotals = {};
+      dbTransactions.filter(t => t.type === 'expense').forEach(t => {
+        categoryTotals[t.category] = (categoryTotals[t.category] || 0) + t.amount;
+      });
+      const expTotal = dbTransactions.filter(t => t.type === 'expense').reduce((s, x) => s + x.amount, 0) || 1;
+      categoryBreakdown = Object.entries(categoryTotals).map(([name, amount]) => ({
+        name,
+        amount,
+        percentage: Number(((amount / expTotal) * 100).toFixed(1))
+      }));
+    }
+
+    const monthlyTrendsRes = await db.query(`
+      SELECT 
+        TO_CHAR(p.purchase_date, 'Mon') as month,
+        COALESCE(SUM(p.total_amount), 0)::float as expense
+      FROM purchases p
+      WHERE (p.user_id = $1 OR p.user_id IS NULL)
+        AND p.purchase_date >= CURRENT_DATE - INTERVAL '6 months'
+      GROUP BY TO_CHAR(p.purchase_date, 'Mon'), DATE_TRUNC('month', p.purchase_date)
+      ORDER BY DATE_TRUNC('month', p.purchase_date) ASC
+    `, [userId]);
+
+    let monthlyTrends = monthlyTrendsRes.rows.map(r => ({
+      month: r.month,
+      income: 7500000,
+      expense: r.expense
+    }));
+
+    if (monthlyTrends.length === 0) {
+      monthlyTrends = [
+        { month: 'Mei', income: 7500000, expense: 4100000 },
+        { month: 'Jun', income: 7500000, expense: 3900000 },
+        { month: 'Jul', income: 8200000, expense: 4400000 },
+        { month: 'Agu', income: 7500000, expense: 3700000 },
+        { month: 'Sep', income: 7800000, expense: 4050000 },
+        { month: 'Okt', income: 7500000, expense: 1850000 }
+      ];
+    }
+
+    // 3. Pelacak Fluktuasi Harga Barang Struk (Inflation Tracker) from Database
+    let priceHistoriesRes = await db.query(`
+      SELECT 
+        prod.name as product_name,
+        s.name as store_name,
+        ph.old_price::float as old_price,
+        ph.new_price::float as new_price,
+        ph.price_change_pct::float as price_change_pct,
+        c.icon as category_icon
+      FROM price_histories ph
+      JOIN products prod ON ph.product_id = prod.id
+      LEFT JOIN categories c ON prod.category_id = c.id
+      LEFT JOIN stores s ON ph.store_id = s.id
+      WHERE (ph.user_id = $1 OR ph.user_id IS NULL)
+      ORDER BY ph.recorded_at DESC
+      LIMIT 20
+    `, [userId]);
+
+    // Seed initial price histories in DB if 0 rows exist
+    if (priceHistoriesRes.rows.length === 0) {
+      const sampleItems = [
+        { name: 'Bimoli Spesial Minyak Goreng 2L', store: 'Indomaret MERR', oldPrice: 35000, newPrice: 38500, pct: 10.0, icon: '🧴' },
+        { name: 'Ultra Milk Full Cream 1L', store: 'Superindo Surabaya', oldPrice: 19000, newPrice: 19500, pct: 2.6, icon: '🥛' },
+        { name: 'Sunlight Jeruk Nipis 750ml', store: 'Indomaret Point', oldPrice: 16500, newPrice: 16000, pct: -3.0, icon: '🧼' },
+        { name: 'Telur Ayam Negeri 1kg', store: 'Superindo Merr', oldPrice: 29000, newPrice: 31500, pct: 8.6, icon: '🥚' }
+      ];
+
+      for (const item of sampleItems) {
+        // Create product if not exists
+        let prodRes = await db.query(`SELECT id FROM products WHERE LOWER(name) = LOWER($1) LIMIT 1`, [item.name]);
+        let prodId;
+        if (prodRes.rows.length === 0) {
+          const newProd = await db.query(`INSERT INTO products (name, user_id) VALUES ($1, $2) RETURNING id`, [item.name, userId]);
+          prodId = newProd.rows[0].id;
+        } else {
+          prodId = prodRes.rows[0].id;
+        }
+
+        // Create store if not exists
+        let storeRes = await db.query(`SELECT id FROM stores WHERE LOWER(name) = LOWER($1) LIMIT 1`, [item.store]);
+        let storeId;
+        if (storeRes.rows.length === 0) {
+          const newStore = await db.query(`INSERT INTO stores (name, user_id) VALUES ($1, $2) RETURNING id`, [item.store, userId]);
+          storeId = newStore.rows[0].id;
+        } else {
+          storeId = storeRes.rows[0].id;
+        }
+
+        // Insert into price_histories
+        await db.query(`
+          INSERT INTO price_histories (product_id, store_id, old_price, new_price, price_change, price_change_pct, user_id)
+          VALUES ($1, $2, $3, $4, $5, $6, $7)
+        `, [prodId, storeId, item.oldPrice, item.newPrice, item.newPrice - item.oldPrice, item.pct, userId]);
+      }
+
+      priceHistoriesRes = await db.query(`
+        SELECT 
+          prod.name as product_name,
+          s.name as store_name,
+          ph.old_price::float as old_price,
+          ph.new_price::float as new_price,
+          ph.price_change_pct::float as price_change_pct,
+          c.icon as category_icon
+        FROM price_histories ph
+        JOIN products prod ON ph.product_id = prod.id
+        LEFT JOIN categories c ON prod.category_id = c.id
+        LEFT JOIN stores s ON ph.store_id = s.id
+        WHERE (ph.user_id = $1 OR ph.user_id IS NULL)
+        ORDER BY ph.recorded_at DESC
+        LIMIT 20
+      `, [userId]);
+    }
+
+    const inflationItems = priceHistoriesRes.rows.map(row => {
+      const pct = parseFloat(row.price_change_pct) || 0;
+      return {
+        name: row.product_name,
+        store: row.store_name || 'Toko Umum',
+        oldPrice: row.old_price,
+        newPrice: row.new_price,
+        change: (pct >= 0 ? '+' : '') + pct.toFixed(1) + '%',
+        status: pct > 5 ? 'inflasi' : (pct < 0 ? 'promo' : 'naik'),
+        icon: row.category_icon || '📦'
+      };
+    });
 
     res.json({
       success: true,
       categoryBreakdown,
       monthlyTrends,
-      topMerchants: [
-        { name: 'Superindo Merr Surabaya', count: 8, total: 1250000 },
-        { name: 'Indomaret Merr', count: 12, total: 840000 },
-        { name: 'Kopi Kenangan Galaxy Mall', count: 6, total: 340000 },
-        { name: 'Starbucks Coffee', count: 4, total: 248000 }
-      ],
+      topMerchants,
+      inflationItems,
       ocrAccuracyRate: 98.9
     });
   } catch (error) {
     next(error);
   }
 };
-
-// Categories now stored in PostgreSQL smartfin_categories table via SmartFinCategory model
 
 let userProfileData = {
   name: 'Alfian S.',
@@ -794,5 +891,3 @@ exports.deleteCategory = async (req, res, next) => {
     next(error);
   }
 };
-
-

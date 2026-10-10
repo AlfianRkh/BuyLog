@@ -89,6 +89,14 @@ export const api = {
     updateSettings: (data) => api.put('/debt-tracker/settings', data)
   },
 
+  // Category API Methods (Unified Categories Table by Feature)
+  categories: {
+    getAll: (feature) => api.get('/categories', { feature }),
+    create: (data) => api.post('/categories', data),
+    update: (id, data) => api.put(`/categories/${id}`, data),
+    delete: (id) => api.delete(`/categories/${id}`)
+  },
+
   // PriceRadar API Methods
   priceRadar: {
     getDashboard: () => api.get('/priceradar/dashboard'),
@@ -100,7 +108,10 @@ export const api = {
     recordLog: (data) => api.post('/priceradar/logs', data),
     getSources: (params = {}) => api.get('/priceradar/sources', params),
     createSource: (data) => api.post('/priceradar/sources', data),
-    getStats: (params = {}) => api.get('/priceradar/stats', params)
+    updateSource: (id, data) => api.put(`/priceradar/sources/${id}`, data),
+    getStats: (params = {}) => api.get('/priceradar/stats', params),
+    getCategories: () => api.get('/priceradar/categories'),
+    createCategory: (data) => api.post('/priceradar/categories', data)
   },
 
   // SmartFin API Methods

@@ -39,7 +39,7 @@ export default function PriceRadarDashboardPage() {
   const [toastMsg, setToastMsg] = useState(null);
 
   // Quick log inline state
-  const [quickProduct, setQuickProduct] = useState('logitech');
+  const [quickProduct, setQuickProduct] = useState('');
   const [quickPlatform, setQuickPlatform] = useState('Tokopedia');
   const [quickPrice, setQuickPrice] = useState('2.850.000');
 
@@ -53,8 +53,11 @@ export default function PriceRadarDashboardPage() {
       setLoading(true);
       const res = await api.priceRadar.getDashboard();
       setData(res);
+      if (res && res.topDeals && res.topDeals.length > 0) {
+        setQuickProduct(res.topDeals[0].title);
+      }
     } catch (err) {
-      console.error('Failed fetching PriceRadar dashboard:', err);
+      console.error('Failed fetching PriceRadar dashboard from DB:', err);
     } finally {
       setLoading(false);
     }
@@ -73,19 +76,27 @@ export default function PriceRadarDashboardPage() {
         price: cleanPrice,
         notes: `Quick Log: ${quickProduct}`
       });
-      showToast(`Data harga Rp ${quickPrice} berhasil direkam ke riwayat telemetri!`);
+      showToast(`Data harga Rp ${quickPrice} berhasil direkam ke riwayat telemetri di Database!`);
       fetchDashboard();
     } catch (err) {
-      showToast('Gagal mencatat log harga.');
+      showToast('Gagal mencatat log harga ke Database.');
     }
   };
 
   const kpis = data?.kpis || {
-    totalWatching: 14,
-    targetHits: 3,
-    avgDealScore: '7.2',
-    potentialSavings: 2450000
+    totalWatching: 0,
+    targetHits: 0,
+    avgDealScore: '0.0',
+    potentialSavings: 0
   };
+
+  const hitProducts = (data?.targetHitProducts && data.targetHitProducts.length > 0) 
+    ? data.targetHitProducts 
+    : (data?.topDeals || []);
+
+  const filteredHitProducts = selectedCategory === 'all' 
+    ? hitProducts 
+    : hitProducts.filter(p => (p.category || '').toLowerCase() === selectedCategory.toLowerCase());
 
   return (
     <div className="pr-container">
@@ -118,7 +129,7 @@ export default function PriceRadarDashboardPage() {
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
             <span className="pr-badge-live">
               <Zap size={13} />
-              <span>Live Radar Feed · Oktober 2026</span>
+              <span>Live Database Feed · PriceRadar</span>
             </span>
           </div>
           <h1 className="pr-page-title">
@@ -126,7 +137,7 @@ export default function PriceRadarDashboardPage() {
             <span>Dashboard PriceRadar</span>
           </h1>
           <p className="pr-page-subtitle">
-            Pantau fluktuasi harga marketplace, deteksi deal terbaik, dan raih target belanja hemat secara presisi.
+            Pantau fluktuasi harga marketplace, deteksi deal terbaik, dan raih target belanja hemat secara presisi dari Database.
           </p>
         </div>
 
@@ -175,8 +186,8 @@ export default function PriceRadarDashboardPage() {
             </div>
           </div>
           <div className="pr-kpi-footer">
-            <span style={{ color: 'var(--primary-600)', fontWeight: 700 }}>+2 Pekan Ini</span>
-            <span>100% Active Scans</span>
+            <span style={{ color: 'var(--primary-600)', fontWeight: 700 }}>Database Active</span>
+            <span>100% Real Time</span>
           </div>
         </Link>
 
@@ -184,7 +195,7 @@ export default function PriceRadarDashboardPage() {
           <div className="pr-kpi-header">
             <div>
               <div className="pr-kpi-label" style={{ color: 'var(--success-600)' }}>Target Hits</div>
-              <div className="pr-kpi-value" style={{ color: 'var(--success-600)' }}>0{kpis.targetHits} <span style={{ fontSize: '0.9rem', fontWeight: 500 }}>Item</span></div>
+              <div className="pr-kpi-value" style={{ color: 'var(--success-600)' }}>{kpis.targetHits} <span style={{ fontSize: '0.9rem', fontWeight: 500 }}>Item</span></div>
             </div>
             <div className="pr-kpi-icon-box" style={{ backgroundColor: 'var(--success-50)', color: 'var(--success-600)' }}>
               <Target size={22} />
@@ -208,7 +219,7 @@ export default function PriceRadarDashboardPage() {
           </div>
           <div className="pr-kpi-footer">
             <span style={{ color: 'var(--warning-600)', fontWeight: 700 }}>GREAT VALUE</span>
-            <span style={{ color: 'var(--gray-500)' }}>Top 10% Market</span>
+            <span style={{ color: 'var(--gray-500)' }}>Real DB Score</span>
           </div>
         </div>
 
@@ -224,7 +235,7 @@ export default function PriceRadarDashboardPage() {
           </div>
           <div className="pr-kpi-footer">
             <span>AKUMULASI DISKON</span>
-            <span style={{ fontWeight: 600, color: 'var(--gray-700)' }}>Across 3 stores</span>
+            <span style={{ fontWeight: 600, color: 'var(--gray-700)' }}>Database Calculated</span>
           </div>
         </Link>
       </div>
@@ -238,9 +249,9 @@ export default function PriceRadarDashboardPage() {
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, color: 'var(--gray-900)' }}>Saatnya Beli! Target Hit Alert</h3>
-              <span className="pr-tag-hit">3 READY</span>
+              <span className="pr-tag-hit">{kpis.targetHits} READY</span>
             </div>
-            <p style={{ margin: '2px 0 0', fontSize: '0.875rem', color: 'var(--gray-600)' }}>Harga pasar saat ini berada tepat atau di bawah target beli yang Anda tentukan.</p>
+            <p style={{ margin: '2px 0 0', fontSize: '0.875rem', color: 'var(--gray-600)' }}>Harga pasar saat ini berada tepat atau di bawah target beli yang Anda tentukan di Database.</p>
           </div>
         </div>
         <Link to="/priceradar/watchlist" className="pr-btn-primary" style={{ backgroundColor: 'var(--success-600)', textDecoration: 'none' }}>
@@ -249,94 +260,58 @@ export default function PriceRadarDashboardPage() {
         </Link>
       </div>
 
-      {/* Target Hit 3 Cards Grid */}
+      {/* Target Hit Cards Grid */}
       <div className="pr-grid-3">
-        {/* Item 1 */}
-        <div className="pr-card" style={{ display: 'flex', flexDirection: 'column', justifyBetween: 'space-between', gap: '16px' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyBetween: 'space-between' }}>
-              <span className="pr-tag-hit"><Flame size={12} /> ALL-TIME LOW</span>
-              <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--success-600)', backgroundColor: 'var(--success-50)', padding: '2px 8px', borderRadius: '4px' }}>SCORE 9.6</span>
-            </div>
-            <Link to="/priceradar/produk/logitech-g-pro-x-2" style={{ textDecoration: 'none', color: 'inherit', display: 'flex', gap: '12px' }}>
-              <img src="https://lh3.googleusercontent.com/aida-public/AB6AXuCXhF515NNFsn78IP3MarYdbMrAeGDReHdeRSnAxuyeP1vXsIUjPHgxFZpPOWADh93rPxOvewK69KWc0BaVoNLGnYwMZmowgwXO1JtDAu4N4CZo4s1-XPe3_r9437acEcjzP8w0Qpl_GWCDMeLacyqtpa_IduUHRmVF8kuvSABl3aMbQorwet6lkzHU3e0rV-ggsGzpg-_Y-HGaXcXIFBVG9yjihhblPVP_Xne6_aYeUQflRUQjqblR0w" alt="Logitech" style={{ width: '64px', height: '64px', borderRadius: '8px', objectFit: 'cover', border: '1px solid var(--gray-200)' }} />
-              <div>
-                <span style={{ fontSize: '0.75rem', color: 'var(--primary-600)', fontWeight: 700 }}>Tokopedia Official</span>
-                <h4 style={{ margin: '2px 0 0', fontSize: '0.95rem', fontWeight: 700, color: 'var(--gray-900)' }}>Logitech G Pro X 2 Lightspeed</h4>
-                <span style={{ fontSize: '0.75rem', color: 'var(--gray-500)' }}>Target: {formatRupiah(3000000)}</span>
-              </div>
-            </Link>
-            <div style={{ backgroundColor: 'var(--gray-50)', padding: '12px', borderRadius: 'var(--radius-md)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid var(--gray-200)' }}>
-              <div>
-                <span style={{ fontSize: '0.75rem', color: 'var(--gray-500)' }}>Harga Sekarang</span>
-                <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--success-600)' }}>{formatRupiah(2890000)}</div>
-              </div>
-              <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--success-600)', backgroundColor: '#ffffff', padding: '4px 8px', borderRadius: '4px', border: '1px solid var(--gray-200)' }}>Hemat 110k</span>
-            </div>
+        {filteredHitProducts.length === 0 ? (
+          <div style={{ gridColumn: 'span 3', textAlign: 'center', padding: '30px', color: 'var(--gray-500)', backgroundColor: '#ffffff', borderRadius: 'var(--radius-md)', border: '1px solid var(--gray-200)' }}>
+            Belum ada produk target hit di database. Silakan tambah target beli baru.
           </div>
-          <a href="https://tokopedia.com" target="_blank" rel="noopener noreferrer" className="pr-btn-primary" style={{ backgroundColor: 'var(--success-600)', justifyContent: 'center', textDecoration: 'none' }}>
-            <span>Beli di Tokopedia</span>
-            <ExternalLink size={16} />
-          </a>
-        </div>
-
-        {/* Item 2 */}
-        <div className="pr-card" style={{ display: 'flex', flexDirection: 'column', justifyBetween: 'space-between', gap: '16px' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyBetween: 'space-between' }}>
-              <span className="pr-tag-hit">GREAT DEAL</span>
-              <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--success-600)', backgroundColor: 'var(--success-50)', padding: '2px 8px', borderRadius: '4px' }}>SCORE 8.8</span>
-            </div>
-            <div style={{ display: 'flex', gap: '12px' }}>
-              <img src="https://lh3.googleusercontent.com/aida-public/AB6AXuBrO-ZCTKVipEML4BkI5usUzOZjfB6jvWeKJA_aStbq1S_nOfZnC11xrewp_m_VBmd0RqNHnNVx3J-QeBazwixSLUhbRLZN7aUJdiWZ95a4Jk6QrPMKVoL9FAB3WTCQa0VVIzCwa9y2SaYZr12Zzo1Pms_u1uKuhj8mVt7DsAe-UIokU8Ss7fEtdxGcvkpC1q6cbhgi5Y-yQfZjJYFAc_frdMp7Oddr4JqeWMG4NybaIin4gq3WI4s_jA" alt="Bimoli" style={{ width: '64px', height: '64px', borderRadius: '8px', objectFit: 'cover', border: '1px solid var(--gray-200)' }} />
-              <div>
-                <span style={{ fontSize: '0.75rem', color: 'var(--primary-600)', fontWeight: 700 }}>Indomaret Klik</span>
-                <h4 style={{ margin: '2px 0 0', fontSize: '0.95rem', fontWeight: 700, color: 'var(--gray-900)' }}>Bimoli Minyak Goreng 2L (Isi 2)</h4>
-                <span style={{ fontSize: '0.75rem', color: 'var(--gray-500)' }}>Target: {formatRupiah(72000)}</span>
+        ) : (
+          filteredHitProducts.slice(0, 3).map((item) => {
+            const savings = Math.max(0, (parseFloat(item.target_price) || 0) - (parseFloat(item.current_price) || 0));
+            return (
+              <div key={item.id} className="pr-card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: '16px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <span className="pr-tag-hit">
+                      {item.is_atl ? <><Flame size={12} /> ALL-TIME LOW</> : 'GREAT DEAL'}
+                    </span>
+                    <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--success-600)', backgroundColor: 'var(--success-50)', padding: '2px 8px', borderRadius: '4px' }}>
+                      SCORE {item.deal_score || '8.5'}
+                    </span>
+                  </div>
+                  <Link to={`/priceradar/produk/${item.slug || item.id}`} style={{ textDecoration: 'none', color: 'inherit', display: 'flex', gap: '12px' }}>
+                    <img
+                      src={item.image_url || 'https://images.unsplash.com/photo-1587829741301-dc798b83add3?w=500&auto=format&fit=crop&q=80'}
+                      alt={item.title}
+                      style={{ width: '64px', height: '64px', borderRadius: '8px', objectFit: 'cover', border: '1px solid var(--gray-200)' }}
+                    />
+                    <div>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--primary-600)', fontWeight: 700 }}>{item.store_name || 'Tokopedia'}</span>
+                      <h4 style={{ margin: '2px 0 0', fontSize: '0.95rem', fontWeight: 700, color: 'var(--gray-900)' }}>{item.title}</h4>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--gray-500)' }}>Target: {formatRupiah(item.target_price)}</span>
+                    </div>
+                  </Link>
+                  <div style={{ backgroundColor: 'var(--gray-50)', padding: '12px', borderRadius: 'var(--radius-md)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid var(--gray-200)' }}>
+                    <div>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--gray-500)' }}>Harga Sekarang</span>
+                      <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--success-600)' }}>{formatRupiah(item.current_price)}</div>
+                    </div>
+                    {savings > 0 && (
+                      <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--success-600)', backgroundColor: '#ffffff', padding: '4px 8px', borderRadius: '4px', border: '1px solid var(--gray-200)' }}>
+                        Hemat {formatRupiah(savings)}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <a href={item.url || 'https://tokopedia.com'} target="_blank" rel="noopener noreferrer" className="pr-btn-primary" style={{ backgroundColor: 'var(--success-600)', justifyContent: 'center', textDecoration: 'none' }}>
+                  <span>Beli di {item.store_name || 'Marketplace'}</span>
+                  <ExternalLink size={16} />
+                </a>
               </div>
-            </div>
-            <div style={{ backgroundColor: 'var(--gray-50)', padding: '12px', borderRadius: 'var(--radius-md)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid var(--gray-200)' }}>
-              <div>
-                <span style={{ fontSize: '0.75rem', color: 'var(--gray-500)' }}>Harga Sekarang</span>
-                <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--success-600)' }}>{formatRupiah(68500)}</div>
-              </div>
-              <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--success-600)', backgroundColor: '#ffffff', padding: '4px 8px', borderRadius: '4px', border: '1px solid var(--gray-200)' }}>Hemat 3.5k</span>
-            </div>
-          </div>
-          <a href="https://klikindomaret.com" target="_blank" rel="noopener noreferrer" className="pr-btn-primary" style={{ backgroundColor: 'var(--success-600)', justifyContent: 'center', textDecoration: 'none' }}>
-            <span>Beli di Indomaret</span>
-            <ExternalLink size={16} />
-          </a>
-        </div>
-
-        {/* Item 3 */}
-        <div className="pr-card" style={{ display: 'flex', flexDirection: 'column', justifyBetween: 'space-between', gap: '16px' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyBetween: 'space-between' }}>
-              <span className="pr-tag-hit">GREAT DEAL</span>
-              <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--success-600)', backgroundColor: 'var(--success-50)', padding: '2px 8px', borderRadius: '4px' }}>SCORE 9.2</span>
-            </div>
-            <div style={{ display: 'flex', gap: '12px' }}>
-              <img src="https://lh3.googleusercontent.com/aida-public/AB6AXuBQ4dRe2p7B2v-g_fz9CkX-amElEm5hrsUHlArwlVwmLOUGwKHDL2m4oGN-1XN4r4C24ffsXmu7jm75jvi942sqxaavQthFgqbsnIk3yslb2EZG_dQEHlZbxO-gRdvzhcxs8TXUHs9--lsPEl09S-PvvcKIY-g3qH-L_h4VvSyMAw7gegHVULQGfgClqQlXOlyQnHix6RdgopYzb2b1QvsclNZeqh7dhH2VlprYhN9LiWDE6dktEgwrQ" alt="Sony XM5" style={{ width: '64px', height: '64px', borderRadius: '8px', objectFit: 'cover', border: '1px solid var(--gray-200)' }} />
-              <div>
-                <span style={{ fontSize: '0.75rem', color: 'var(--primary-600)', fontWeight: 700 }}>Shopee Mall</span>
-                <h4 style={{ margin: '2px 0 0', fontSize: '0.95rem', fontWeight: 700, color: 'var(--gray-900)' }}>Sony WH-1000XM5 ANC</h4>
-                <span style={{ fontSize: '0.75rem', color: 'var(--gray-500)' }}>Target: {formatRupiah(4600000)}</span>
-              </div>
-            </div>
-            <div style={{ backgroundColor: 'var(--gray-50)', padding: '12px', borderRadius: 'var(--radius-md)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid var(--gray-200)' }}>
-              <div>
-                <span style={{ fontSize: '0.75rem', color: 'var(--gray-500)' }}>Harga Sekarang</span>
-                <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--success-600)' }}>{formatRupiah(4599000)}</div>
-              </div>
-              <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--success-600)', backgroundColor: '#ffffff', padding: '4px 8px', borderRadius: '4px', border: '1px solid var(--gray-200)' }}>Hemat 1k</span>
-            </div>
-          </div>
-          <a href="https://shopee.co.id" target="_blank" rel="noopener noreferrer" className="pr-btn-primary" style={{ backgroundColor: 'var(--success-600)', justifyContent: 'center', textDecoration: 'none' }}>
-            <span>Beli di Shopee</span>
-            <ExternalLink size={16} />
-          </a>
-        </div>
+            );
+          })
+        )}
       </div>
 
       {/* Mid Split Section */}
@@ -350,21 +325,20 @@ export default function PriceRadarDashboardPage() {
               </div>
               <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, color: 'var(--gray-900)' }}>Quick Log Harga Manual</h3>
             </div>
-            <span style={{ fontSize: '0.75rem', color: 'var(--gray-500)', fontWeight: 600 }}>FAST TELEMETRY INGESTION</span>
+            <span style={{ fontSize: '0.75rem', color: 'var(--gray-500)', fontWeight: 600 }}>DATABASE TELEMETRY INGESTION</span>
           </div>
 
           <form onSubmit={handleQuickSubmit} style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: '12px', alignItems: 'end' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--gray-600)', uppercase: 'true' }}>PILIH PRODUK</label>
+              <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--gray-600)' }}>PILIH PRODUK</label>
               <select
                 value={quickProduct}
                 onChange={(e) => setQuickProduct(e.target.value)}
                 style={{ padding: '9px 12px', borderRadius: 'var(--radius-md)', border: '1px solid var(--gray-200)', fontSize: '0.875rem', color: 'var(--gray-800)', outline: 'none' }}
               >
-                <option value="logitech">Logitech G Pro X 2</option>
-                <option value="bimoli">Bimoli Pouch 2L (Isi 2)</option>
-                <option value="sony">Sony WH-1000XM5</option>
-                <option value="s24">Samsung Galaxy S24 Ultra</option>
+                {(data?.topDeals || data?.targetHitProducts || []).map(p => (
+                  <option key={p.id} value={p.title}>{p.title}</option>
+                ))}
               </select>
             </div>
 
@@ -395,7 +369,7 @@ export default function PriceRadarDashboardPage() {
 
             <button type="submit" className="pr-btn-primary" style={{ width: '100%', justifyContent: 'center' }}>
               <PlusCircle size={16} />
-              <span>Simpan Log</span>
+              <span>Simpan Log di DB</span>
             </button>
           </form>
         </div>

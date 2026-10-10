@@ -3,7 +3,8 @@ const Category = require('../models/Category');
 class CategoryController {
   static async getAll(req, res, next) {
     try {
-      const categories = await Category.findAll(req.user.id);
+      const feature = req.query.feature || null;
+      const categories = await Category.findAll(req.user.id, feature);
       res.status(200).json({
         success: true,
         data: categories
@@ -15,11 +16,11 @@ class CategoryController {
 
   static async create(req, res, next) {
     try {
-      const { name, icon, color } = req.body;
+      const { name, icon, color, type, feature } = req.body;
       if (!name) {
         return res.status(400).json({ success: false, message: 'Nama kategori harus diisi' });
       }
-      const category = await Category.create({ name, icon, color, userId: req.user.id });
+      const category = await Category.create({ name, icon, color, type, feature, userId: req.user.id });
       res.status(201).json({
         success: true,
         message: 'Kategori berhasil ditambahkan',
@@ -32,8 +33,8 @@ class CategoryController {
 
   static async update(req, res, next) {
     try {
-      const { name, icon, color } = req.body;
-      const category = await Category.update(req.params.id, req.user.id, { name, icon, color });
+      const { name, icon, color, type, feature } = req.body;
+      const category = await Category.update(req.params.id, req.user.id, { name, icon, color, type, feature });
       res.status(200).json({
         success: true,
         message: 'Kategori berhasil diperbarui',
